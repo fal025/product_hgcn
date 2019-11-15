@@ -1,5 +1,7 @@
-Hyperbolic Graph Convolutional Networks in PyTorch
+CS229 project - product space GNN
 ==================================================
+
+Adapted from https://github.com/HazyResearch/hgcn 
 
 ## 1. Overview
 
