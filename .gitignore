@@ -1,2 +1,8 @@
-product-hgcn
 .gitignore
+
+__pycache__/
+
+/product-hgcn/*
+
+**/__pycache__/
+
