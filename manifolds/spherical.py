@@ -21,8 +21,6 @@ class Spherical(Manifold):
     def angle (self, p1, p2, c):
 
         inner_prod = (p1 * p2).sum(dim=-1, keepdim=keepdim)
-
-
         return torch.acos(inner_prod / (c**2))
         
         
@@ -38,8 +36,7 @@ class Spherical(Manifold):
 
     def proj(self, p, c):
 
-        
-        return p / p.norm(dim=-1, keepdim=True()
+        return p / p.norm(dim=-1, keepdim=True())
 
     def proj_tan(self, u, p, c):
 
@@ -62,23 +59,23 @@ class Spherical(Manifold):
 
     def logmap(self, p1, p2, c):
         
+        u = self.proju(p1, p2 - p1)
+        dist = self.sqdist(p1, p2)**(1/2)
+        # If the two points are "far apart", correct the norm.
+        cond = dist.gt(EPS[dist.dtype])
         
-    
-        return p2 - p1
+        return torch.where(cond, u * dist / u.norm(dim=-1, keepdim=True), u)
 
     def expmap0(self, u, c):
-        return u
+
+        return expmap(u, torch.zeros(p.shape), c)
+    
 
     def logmap0(self, p, c):
-        return p
 
-    def mobius_add(self, x, y, c, dim=-1):
-        
-        return x + y
 
-    def mobius_matvec(self, m, x, c):
-        mx = x @ m.transpose(-1, -2)
-        return mx
+        return logmap(p, torch.zeros(p.shape),c)
+
 
     def init_weights(self, w, c, irange=1e-5):
         w.data.uniform_(-irange, irange)
@@ -91,4 +88,9 @@ class Spherical(Manifold):
         return  c**2 * torch.cos(self.angle(u,v, c))
 
     def ptransp(self, x, y, v, c):
-        return v
+
+        return self.proj_tan(y,v)
+
+    def dist(self, x: torch.Tensor, y: torch.Tensor, *, keepdim=False) -> torch.Tensor:
+        inner = self.inner(x, x, y, keepdim=keepdim).clamp(-0.9999, 0.9999)
+        return torch.acos(inner)
