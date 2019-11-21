@@ -22,24 +22,21 @@ class Hyperboloid(Manifold):
     def sqdist(self, p1, p2, c):
         K = c
         d = torch.sqrt(K) * arcosh(-self.inner(None, c, p1, p2) / K)
+        return d**2
 
-    #def egrad2rgrad(self, p, dp, c):
-        lambda_p = self._lambda_x(p, c)
-        dp /= lambda_p.pow(2)
-        return dp
+    def egrad2rgrad(self, p, dp, c):
+        return self.proj_tan(dp, p, c)
 
-    #def proj(self, x, c):
-        norm = torch.clamp_min(x.norm(dim=-1, keepdim=True, p=2), self.min_norm)
-        maxnorm = (1 - self.eps[x.dtype]) / (c ** 0.5)
-        cond = norm > maxnorm
-        projected = x / norm * maxnorm
-        return torch.where(cond, projected, x)
+    def proj(self, x, c):
+        replace = torch.sqrt(1+torch.norm(x[1:],p = 2)**2)
+        x[0] = replace
+        return x
 
     def proj_tan(self, u, p, c):
-        return u
+        return p + self.inner(None, c, u, p) * u
 
     def proj_tan0(self, u, c):
-        return u
+        return self.proj_tan(u,0,c)
 
     def expmap(self, u, p, c):
         K = c
@@ -54,17 +51,11 @@ class Hyperboloid(Manifold):
             / self.inner(None, c, (p2 + 1/K * self.inner(None, c, p1, p2)*p1))
         return log_map
 
-    #def expmap0(self, u, c):
-        sqrt_c = c ** 0.5
-        u_norm = torch.clamp_min(u.norm(dim=-1, p=2, keepdim=True), self.min_norm)
-        gamma_1 = tanh(sqrt_c * u_norm) * u / (sqrt_c * u_norm)
-        return gamma_1
+    def expmap0(self, u, c):
+        return self.expmap(u, 0, c)
 
-    #def logmap0(self, p, c):
-        sqrt_c = c ** 0.5
-        p_norm = p.norm(dim=-1, p=2, keepdim=True).clamp_min(self.min_norm)
-        scale = 1. / sqrt_c * artanh(sqrt_c * p_norm) / p_norm
-        return scale * p
+    def logmap0(self, p, c):
+        return self.logmap(p,0,c)
 
     def mobius_add(self, x, y, c, dim=-1):
         return x + y
@@ -82,7 +73,9 @@ class Hyperboloid(Manifold):
             v = u
         return (u * v).sum(dim=dim, keepdim=keepdim) - 2 * u[0] * v[0]
 
-    #def ptransp(self, x, y, u, c):
-        lambda_x = self._lambda_x(x, c)
-        lambda_y = self._lambda_x(y, c)
-        return self._gyration(y, -x, u, c) * lambda_x / lambda_y
+    def ptransp(self, x, y, u, c):
+        ind_distsq = self.sqdist(x, y, 1)
+        return u - self.inner(None, c, self.logmap(x,y,1), u) / ind_distsq \
+            * (self.logmap(x,y,1) + self.logmap(y,x,1))
+
+
