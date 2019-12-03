@@ -90,9 +90,12 @@ class PoincareBall(Manifold):
 
     def mobius_matvec(self, m, x, c):
         sqrt_c = c ** 0.5
+        #print(m.shape)
         x_norm = x.norm(dim=-1, keepdim=True, p=2).clamp_min(self.min_norm)
+        #print(torch.isnan(m).sum())
         mx = x @ m.transpose(-1, -2)
         mx_norm = mx.norm(dim=-1, keepdim=True, p=2).clamp_min(self.min_norm)
+        #print(torch.isnan(x_norm).sum())
         res_c = tanh(mx_norm / x_norm * artanh(sqrt_c * x_norm)) * mx / (mx_norm * sqrt_c)
         cond = (mx == 0).prod(-1, keepdim=True, dtype=torch.uint8)
         res_0 = torch.zeros(1, dtype=res_c.dtype, device=res_c.device)

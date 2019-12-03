@@ -74,6 +74,7 @@ class LinearDecoder(Decoder):
                 count = int(word[i+1])
                 for j in range(count):
                     manifold_array.append(getattr(manifolds, man_name)())
+                    
             self.manifold_name = "productManifold"
             self.manifold = getattr(manifolds, self.manifold_name)(manifold_array,args.dim)
 

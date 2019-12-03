@@ -102,7 +102,9 @@ class HypLinear(nn.Module):
         #print("Hyplin")
         
         drop_weight = F.dropout(self.weight, self.dropout, training=self.training)
+        #print(self.weight.shape)
         mv = self.manifold.mobius_matvec(drop_weight, x, self.c)
+        #print(mv.shape)
         #print("mv")
         #print(mv)
         res = self.manifold.proj(mv, self.c)

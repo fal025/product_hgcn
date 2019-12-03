@@ -43,12 +43,15 @@ class productManifold(Manifold):
         super(productManifold,self).__init__()
         self.manifolds = manifolds
         self.name = "productManifold"
+
+        self.num_man = len(manifolds)
+
         self.slices = []
-        dtype = None
+        #dtype = None
         pos0 = 0
         for i, manifold in enumerate(manifolds):
 
-            pos1 = pos0 + int(total_dim / len(manifolds)) 
+            pos1 = pos0 + 1
             self.slices.append(slice(pos0, pos1))
             pos0 = pos1
 
@@ -92,7 +95,11 @@ class productManifold(Manifold):
         projected = []
         #print(self.manifolds)
         for i, manifold in enumerate(self.manifolds):
+            #print("proj")
+            #print(p.shape)
             point = self.take_submanifold_value(p, i)
+
+            #print(point == p)
             #print(point)
             proj = manifold.proj(point,c)
             #proj.requires_grad = True
@@ -103,6 +110,7 @@ class productManifold(Manifold):
         #print(projected)
 
         res =  torch.cat(projected, -1)
+        #print(res.shape)
         #if not res.requires_grad:
         #    raise ValueError
 
@@ -127,13 +135,14 @@ class productManifold(Manifold):
             
             projected.append(proj)
 
-        #res = torch.cat(projected, -1)
+        res = torch.cat(projected, -1)
         #print(res.shape)
         #if not res.requires_grad:
         #    raise ValueError
+        
+        #print()
 
-
-        res.retain_grad()
+        #res.retain_grad()
         
         return res
 
@@ -142,8 +151,12 @@ class productManifold(Manifold):
         """Projects u on the tangent space of the origin."""
         target_batch_dim = _calculate_target_batch_dim(u.dim())
         projected = []
+        #print("proj_tan0")
+        #print(u.shape)
         for i, manifold in enumerate(self.manifolds):
             tangent = self.take_submanifold_value(u, i)
+            #print(u == tangent)
+            
             #print(tangent.shape)
             
             proj = manifold.proj_tan0(tangent,c)
@@ -156,7 +169,7 @@ class productManifold(Manifold):
 
             projected.append(proj)
         res = torch.cat(projected, -1)
-
+        #print(res.shape)
         #if not res.requires_grad:
         #    raise ValueError
 
@@ -169,7 +182,9 @@ class productManifold(Manifold):
     def expmap(self, u, p, c):
         """Exponential map of u at point p."""
         target_batch_dim = _calculate_target_batch_dim(u.dim(), p.dim())
-        #print(u)
+        #print("expmap")
+        #print(u.shape)
+
         mapped_tensors = []
         for i, manifold in enumerate(self.manifolds):
             point = self.take_submanifold_value(p, i)
@@ -185,9 +200,9 @@ class productManifold(Manifold):
 
         #if not res.requires_grad:
         #    raise ValueError
+        #print(res.shape)
 
-
-        res.retain_grad()
+        #res.retain_grad()
         
         return res
 
@@ -195,6 +210,9 @@ class productManifold(Manifold):
     def logmap(self, p1, p2, c):
         target_batch_dim = _calculate_target_batch_dim(p1.dim(), p2.dim())
         logmapped_tensors = []
+        #print("logmap")
+        #print(p1.shape)
+        #print(p2.shape)
         for i, manifold in enumerate(self.manifolds):
             point = self.take_submanifold_value(p1, i)
             point1 = self.take_submanifold_value(p2, i)
@@ -206,7 +224,8 @@ class productManifold(Manifold):
             logmapped_tensors.append(logmapped)
 
         res = torch.cat(logmapped_tensors, -1)
-
+        
+        #print(res.shape)
         #if not res.requires_grad:
         #    raise ValueError
 
@@ -217,6 +236,8 @@ class productManifold(Manifold):
 
     def expmap0(self, u, c):
         """Exponential map of u at point p."""
+        #print("exp0")
+        #print(u.shape)
         target_batch_dim = _calculate_target_batch_dim(u.dim())
         #print(u)
         mapped_tensors = []
@@ -230,7 +251,8 @@ class productManifold(Manifold):
             mapped_tensors.append(mapped)
         
         res = torch.cat(mapped_tensors, -1)
-
+        
+        #print(res.shape)
         #if not res.requires_grad:
         #    raise ValueError
 
@@ -244,6 +266,8 @@ class productManifold(Manifold):
     def logmap0(self, p, c):
         target_batch_dim = _calculate_target_batch_dim(p.dim())
         logmapped_tensors = []
+        #print("logmap0")
+        #print(p.shape)
         for i, manifold in enumerate(self.manifolds):
             point = self.take_submanifold_value(p, i)
             logmapped = manifold.logmap0(point,c)
@@ -255,6 +279,7 @@ class productManifold(Manifold):
 
 
         res = torch.cat(logmapped_tensors, -1)
+        #print(res.shape)
         #if not res.requires_grad:
         #    raise ValueError
 
@@ -263,6 +288,8 @@ class productManifold(Manifold):
     def mobius_add(self, x, y, c, dim=-1):
         target_batch_dim = _calculate_target_batch_dim(x.dim(), y.dim())
         transported_tensors = []
+        #print("mobius add")
+        #print(x.shape, y.shape)
         for i, manifold in enumerate(self.manifolds):
             point = self.take_submanifold_value(x, i)
             point1 = self.take_submanifold_value(y, i)
@@ -273,9 +300,11 @@ class productManifold(Manifold):
                 (*mob_add.shape[:target_batch_dim], -1)
             )
             transported_tensors.append(mob_add)
+
         res = torch.cat(transported_tensors, -1)
         #res.retain_grad()
-
+        
+        #print(res.shape)
         return res        
 
 
@@ -283,9 +312,22 @@ class productManifold(Manifold):
 
         target_batch_dim = _calculate_target_batch_dim(m.dim(), x.dim())
         transported_tensors = []
+        #print("mobius_matvec")
+        #print(x.shape)
+        #print(m.shape)
         for i, manifold in enumerate(self.manifolds):
-            point = self.take_submanifold_value(m, i)
+            #point = m
+            if m.shape[-1] == x.shape[-1]:
+                point = self.take_submanifold_value(m, i)
+            else: 
+                point = self.take_submanifold_value(m, i, is_matvec = True)
+                
+            
+            #print(x.shape)
+            #point1 = x
             point1 = self.take_submanifold_value(x, i)
+            #print(point.shape)
+            #print(point1.shape)
             mob_matvec = manifold.mobius_matvec(point, point1, c)
             #mob_matvec.requires_grad = True
             
@@ -293,7 +335,11 @@ class productManifold(Manifold):
                 (*mob_matvec.shape[:target_batch_dim], -1)
             )
             transported_tensors.append(mob_matvec)
-        return torch.cat(transported_tensors, -1)
+        
+        res =  torch.cat(transported_tensors, -1)
+
+        #print(res.shape)
+        return res
 
 
     def init_weights(self, w, c, irange=1e-5):
@@ -340,6 +386,7 @@ class productManifold(Manifold):
         target_batch_dim = _calculate_target_batch_dim(x.dim(), y.dim(), u.dim())
         transported_tensors = []
         for i, manifold in enumerate(self.manifolds):
+
             point = self.take_submanifold_value(x, i)
             point1 = self.take_submanifold_value(y, i)
             tangent = self.take_submanifold_value(u, i)
@@ -354,8 +401,7 @@ class productManifold(Manifold):
 
     
     def take_submanifold_value(
-        self, x: torch.Tensor, i: int, reshape=True
-    ) -> torch.Tensor:
+            self, x: torch.Tensor, i: int, reshape=True, is_matvec = False    ) -> torch.Tensor:
         """
         Take i'th slice of the ambient tensor and possibly reshape.
 
@@ -372,8 +418,30 @@ class productManifold(Manifold):
         -------
         torch.Tensor
         """
+        #slc_length = int(x.shape[-1] / self.num_man)
+        
+        if not is_matvec:
+
+            slc_length = int(x.shape[-1] / self.num_man)
+        else:
+            slc_length = int(x.shape[-2] / self.num_man)
+            
         slc = self.slices[i]
-        part = x.narrow(-1, slc.start, slc.stop - slc.start)
+        #print(slc)
+        #print(slc.start, slc.stop, slc.stop - slc.start)
+        start = slc.start * slc_length
+        length =  (slc.stop - slc.start) * slc_length
+        if x.shape[-1] - (start + slc_length)< slc_length:
+            length = x.shape[-1] - start
+
+        part = x.narrow(-1, start, length)
+
+        if not is_matvec:
+            part = x.narrow(-1, start, length)
+        else:
+            part = x.narrow(-2, start, length)
+            
+        #print(part.shape)
 
         #if reshape:
         #    part = part.reshape((*part.shape[:-1], *self.shapes[i]))
