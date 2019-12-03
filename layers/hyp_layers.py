@@ -99,15 +99,24 @@ class HypLinear(nn.Module):
         init.constant_(self.bias, 0)
 
     def forward(self, x):
+        #print("Hyplin")
+        
         drop_weight = F.dropout(self.weight, self.dropout, training=self.training)
         mv = self.manifold.mobius_matvec(drop_weight, x, self.c)
+        #print("mv")
+        #print(mv)
         res = self.manifold.proj(mv, self.c)
         if self.use_bias: 
+            #print("self.bias")
+            #print(self.bias)
             bias = self.manifold.proj_tan0(self.bias, self.c)
             hyp_bias = self.manifold.expmap0(bias, self.c)
             hyp_bias = self.manifold.proj(hyp_bias, self.c)
             res = self.manifold.mobius_add(res, hyp_bias, c=self.c)
             res = self.manifold.proj(res, self.c)
+            #print("res")
+            #print(res)
+
         return res
         
 
@@ -134,12 +143,22 @@ class HypAgg(Module):
             self.att = DenseAtt(in_features, dropout, lambda x: x)
 
     def forward(self, x, adj):
+        #print("HypAgg")
+        #print(x)
         x_tangent = self.manifold.logmap0(x, c=self.c)
+        #print("x_tangent")
+        #print(x_tangent)
         if self.use_att:
             # TODO : merge in sparse att layer
             adj = self.att(x_tangent, adj)
         support_t = torch.spmm(adj, x_tangent)
+        #print("adj")
+        #print(adj)
+
+        #print("support_t")
+        #print(torch.isnan(support_t).sum())
         output = self.manifold.proj(self.manifold.expmap0(support_t, c=self.c), c=self.c)
+        #print(torch.isnan(output).sum())
         return output
 
     def extra_repr(self):
@@ -161,8 +180,12 @@ class HypAct(Module):
         self.act = act
 
     def forward(self, x):
+        #print("HypAct")
         xt = self.act(self.manifold.logmap0(x, c=self.c_in))
+        #print(torch.isnan(xt).sum())
         xt = self.manifold.proj_tan0(xt, c=self.c_out)
+        #print(torch.isnan(xt).sum())
+        
         return self.manifold.proj(self.manifold.expmap0(xt, c=self.c_out), c=self.c_out)
 
     def extra_repr(self):

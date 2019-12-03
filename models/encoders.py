@@ -95,7 +95,35 @@ class HypGCN(Encoder):
 
     def __init__(self, c, args):
         super(HypGCN, self).__init__(c)
-        self.manifold = getattr(manifolds, args.manifold)()
+        #print(args.manifold)
+        if args.manifold not in ["Spherical", "Euclidean", "PoincareBall", "Hyperboloid"]:
+            manifold_array = []
+            word = list(args.manifold)
+            for i in range(0,len(word), 2):
+                if word[i] == "E":
+                    man_name = "Euclidean"
+                elif word[i] == "P":
+                    man_name = "PoincareBall"
+                elif word[i] == "S":
+                    man_name = "Spherical"
+                elif word[i] == "H":
+                    man_name = "Hyperboloid"
+                else:
+                    raise ValueError("Invalide string in the manifold")
+                count = int(word[i+1])
+                for j in range(count):
+                    manifold_array.append(getattr(manifolds, man_name)())
+                #print("__________")
+                #print(manifold_array)
+            self.manifold_name = "productManifold"
+            self.manifold = getattr(manifolds, self.manifold_name)(manifold_array, args.dim)
+
+                    
+        else:
+            self.manifold = getattr(manifolds, args.manifold)()
+
+        #self.manifold = getattr(manifolds, args.manifold)()
+        
         assert args.num_layers > 1
         dims, acts, self.curvatures = hyp_layers.get_dim_act_curv(args)
         self.curvatures.append(self.c)
@@ -113,9 +141,15 @@ class HypGCN(Encoder):
         self.encode_graph = True
 
     def encode(self, x, adj):
+        #print("encoder")
+        #print(self.manifold.proj_tan0(x, self.curvatures[0]))
+        #print("------------")
         x_hyp = self.manifold.proj(
                 self.manifold.expmap0(self.manifold.proj_tan0(x, self.curvatures[0]), c=self.curvatures[0]),
                 c=self.curvatures[0])
+
+
+        #print(torch.isnan(x_hyp).sum())
         return super(HypGCN, self).encode(x_hyp, adj)
 
 
@@ -180,4 +214,37 @@ class Shallow(Encoder):
         h = self.lt[self.all_nodes, :]
         if self.use_feats:
             h = torch.cat((h, x), 1)
-        return super(Shallow, self).encode(h, adj)
+        return super(Shallow, self).encode(h, aui)
+
+
+class ProdGCN(Encoder):
+    """
+    Product-GCN.
+    """
+
+    def __init__(self, c, args):
+        super(ProdGCN, self).__init__(c)
+        print(args.manifold)
+        print(manifolds)
+        self.manifold = getattr(manifolds, args.manifold)()
+        assert args.num_layers > 1
+        dims, acts, self.curvatures = hyp_layers.get_dim_act_curv(args)
+        self.curvatures.append(self.c)
+        hgc_layers = []
+        for i in range(len(dims) - 1):
+            c_in, c_out = self.curvatures[i], self.curvatures[i + 1]
+            in_dim, out_dim = dims[i], dims[i + 1]
+            act = acts[i]
+            hgc_layers.append(
+                    hyp_layers.HyperbolicGraphConvolution(
+                            self.manifold, in_dim, out_dim, c_in, c_out, args.dropout, act, args.bias, args.use_att
+                    )
+            )
+        self.layers = nn.Sequential(*hgc_layers)
+        self.encode_graph = True
+
+    def encode(self, x, adj):
+        x_hyp = self.manifold.proj(
+                self.manifold.expmap0(self.manifold.proj_tan0(x, self.curvatures[0]), c=self.curvatures[0]),
+                c=self.curvatures[0])
+        return super(ProdGCN, self).encode(x_hyp, adj)

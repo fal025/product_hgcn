@@ -17,6 +17,7 @@ class Decoder(nn.Module):
         self.c = c
 
     def decode(self, x, adj):
+        print("decoder super")
         if self.decode_adj:
             input = (x, adj)
             probs, _ = self.cls.forward(input)
@@ -55,7 +56,32 @@ class LinearDecoder(Decoder):
 
     def __init__(self, c, args):
         super(LinearDecoder, self).__init__(c)
-        self.manifold = getattr(manifolds, args.manifold)()
+
+        if args.manifold not in ["Spherical", "Euclidean", "PoincareBall", "Hyperboloid"]:
+            manifold_array = []
+            word = list(args.manifold)
+            for i in range(0,len(word), 2):
+                if word[i] == "E":
+                    man_name = "Euclidean"
+                elif word[i] == "P":
+                    man_name = "PoincareBall"
+                elif word[i] == "S":
+                    man_name = "Spherical"
+                elif word[i] == "H":
+                    man_name = "Hyperboloid"
+                else:
+                    raise ValueError("Invalide string in the manifold")
+                count = int(word[i+1])
+                for j in range(count):
+                    manifold_array.append(getattr(manifolds, man_name)())
+            self.manifold_name = "productManifold"
+            self.manifold = getattr(manifolds, self.manifold_name)(manifold_array,args.dim)
+
+                    
+        else:
+            self.manifold = getattr(manifolds, args.manifold)()
+
+        #self.manifold = getattr(manifolds, args.manifold)()
         self.input_dim = args.dim
         self.output_dim = args.n_classes
         self.bias = args.bias
@@ -63,7 +89,10 @@ class LinearDecoder(Decoder):
         self.decode_adj = False
 
     def decode(self, x, adj):
+        #print("decoder")
+        #print(x)
         h = self.manifold.proj_tan0(self.manifold.logmap0(x, c=self.c), c=self.c)
+        #print(torch.isnan(h).sum())
         return super(LinearDecoder, self).decode(h, adj)
 
     def extra_repr(self):
