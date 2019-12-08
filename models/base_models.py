@@ -45,8 +45,11 @@ class BaseModel(nn.Module):
                 else:
                     raise ValueError("Invalide string in the manifold")
                 count = int(word[i+1])
-                for j in range(count):
-                    manifold_array.append(getattr(manifolds, man_name)())
+                
+                
+                
+                #for j in range(count):
+                manifold_array.append((getattr(manifolds, man_name)(),count))
             self.manifold_name = "productManifold"
             self.manifold = getattr(manifolds, self.manifold_name)(manifold_array, args.dim)
 
@@ -57,6 +60,7 @@ class BaseModel(nn.Module):
         self.encoder = getattr(encoders, args.model)(self.c, args)
 
     def encode(self, x, adj):
+        #print(x, adj)
         h = self.encoder.encode(x, adj)
         return h
 
@@ -144,6 +148,7 @@ class LPModel(BaseModel):
         #print(neg_scores)
         loss = F.binary_cross_entropy(pos_scores, torch.ones_like(pos_scores))
         loss += F.binary_cross_entropy(neg_scores, torch.zeros_like(neg_scores))
+
         if pos_scores.is_cuda:
             pos_scores = pos_scores.cpu()
             neg_scores = neg_scores.cpu()

@@ -2,185 +2,133 @@ import torch
 from manifolds.base import Manifold
 from torch.autograd import Function
 from utils.math_utils import artanh, tanh
-import itertools
-from typing import Tuple, Any, Union
-__all__ = [ "broadcast_shapes" ]
-def dot(x,y): return torch.sum(x * y, -1)
-def broadcast_shapes(*shapes: Tuple[int]) -> Tuple[int]:
-    """Apply numpy broadcasting rules to shapes."""
-    result = []
-    for dims in itertools.zip_longest(*map(reversed, shapes), fillvalue=1):
-        dim: int = 1
-        for d in dims:
-            if dim != 1 and d != 1 and d != dim:
-                raise ValueError("Shapes can't be broadcasted")
-            elif d > dim:
-                dim = d
-        result.append(dim)
-    return tuple(reversed(result))
+
 
 class Spherical(Manifold):
     """
-    Spherical Manifold class.
+    PoicareBall Manifold class.
+
+    We use the following convention: x0^2 + x1^2 + ... + xd^2 < 1 / c
+
+    Note that 1/sqrt(c) is the Poincare ball radius.
+
     """
 
-
-
-    def __init__(self):
+    def __init__(self, ):
         super(Spherical, self).__init__()
         self.name = 'Spherical'
-        self.eps = {torch.float32: 1e-4, torch.float64: 1e-6}
-        #print("-----------")
+        self.min_norm = 1e-15
+        self.eps = {torch.float32: 4e-3, torch.float64: 1e-5}
 
-    def normalize(self, p ):
-        dim = p.size(-1)
-        p.view(-1, dim).renorm_(2, 0, 1.)
-        return p
+    def sqdist(self, p1, p2, c):
+        sqrt_c = c ** 0.5
 
-    # this function compute the square distance for p1, p2
-    def angle (self, p1, p2, c=1):
+        #print(torch.isnan(p1).sum(),torch.isnan(p2).sum() )
         
-        #print(p1)
-        inner_prod = (p1 * p2).sum(dim=-1, keepdim=True)
-        return torch.acos(inner_prod.clamp(min = -.9999, max = .9999) / (c**2))
-        
-        
-    def sqdist(self, p1, p2,c=1):
-        
-        return self.dist(p1,p2) ** 2
+        dist_c = artanh(
+            sqrt_c * self.mobius_add(-p1, p2, c, dim=-1).norm(dim=-1, p=2, keepdim=False)
+        )
+        #print(torch.isnan(dist_c).sum())
+        dist = dist_c * 2 / sqrt_c
+        return (dist ** 2).clamp(max = 75)
 
-    def egrad2rgrad(self, p, dp, c=1):
-        
-        #######
-        
-        return proj_tan(dp, p, c=1)
+    def _lambda_x(self, x, c):
+        x_sqnorm = torch.sum(x.data.pow(2), dim=-1, keepdim=True)
+        return 2 / (1. + c * x_sqnorm).clamp_min(self.min_norm)
 
-    def proj(self, p, c):
-        #print("project")
-        #print("proj")
-        #print(p.sum())
-        
-        return p / p.norm(2, dim=-1, keepdim=True).clamp(min = 1e-6)
+    def egrad2rgrad(self, p, dp, c):
+        lambda_p = self._lambda_x(p, c)
+        dp /= lambda_p.pow(2)
+        return dp
 
-    def proj_tan(self, u, p, c=1):
+    def proj(self, x, c):
+        norm = torch.clamp_min(x.norm(dim=-1, keepdim=True, p=2), self.min_norm)
+        maxnorm = (1 - self.eps[x.dtype]) / (c ** 0.5)
+        cond = norm > maxnorm
+        projected = x / norm * maxnorm
+        return torch.where(cond, projected, x)
 
-        u = u - (p * u).sum(dim=-1, keepdim=True) * p
-        #print("proj_tan")
-        #print(u.sum())
-        #print("-------")
+    def proj_tan(self, u, p, c):
         return u
 
-    def proj_tan0(self, u, c=1):
-        
-        unit = self.proj(torch.ones(u.shape),c)
+    def proj_tan0(self, u, c):
+        return u
 
-        return self.proj_tan(u,unit,c)
+    def expmap(self, u, p, c):
+        sqrt_c = c ** 0.5
+        u_norm = u.norm(dim=-1, p=2, keepdim=True).clamp_min(self.min_norm)
+        second_term = (
+                tanh(sqrt_c / 2 * self._lambda_x(p, c) * u_norm)
+                * u
+                / (sqrt_c * u_norm)
+        )
+        gamma_1 = self.mobius_add(p, second_term, c)
+        return gamma_1
 
-    def expmap(self, u, p, c=1):
+    def logmap(self, p1, p2, c):
+        sub = self.mobius_add(-p1, p2, c)
+        sub_norm = sub.norm(dim=-1, p=2, keepdim=True).clamp_min(self.min_norm)
+        lam = self._lambda_x(p1, c)
+        sqrt_c = c ** 0.5
+        return 2 / sqrt_c / lam * artanh(sqrt_c * sub_norm) * sub / sub_norm
 
-        
-        #print("in exp")
-        #print((p).sum())
-        #print(u.sum())
-        #print("----------")
-        #print(u)
-        #print(u.shape)
-        #print(p.shape)
-        norm_u = u.norm(dim=-1, keepdim=True).clamp(min = 1e-7)
-        exp = p * torch.cos(norm_u) + u * torch.sin(norm_u) / norm_u
-        retr = self.proj(p + u,c)
-        #print("in exp after proj")
-        #print(torch.isnan(exp).sum())
-        cond = norm_u > self.eps[norm_u.dtype]
-        
-        #print("expmap")
-        #print(exp.shape)
+    def expmap0(self, u, c):
+        sqrt_c = c ** 0.5
+        u_norm = torch.clamp_min(u.norm(dim=-1, p=2, keepdim=True), self.min_norm)
+        gamma_1 = tanh(sqrt_c * u_norm) * u / (sqrt_c * u_norm)
+        return gamma_1
 
+    def logmap0(self, p, c):
+        sqrt_c = c ** 0.5
+        p_norm = p.norm(dim=-1, p=2, keepdim=True).clamp_min(self.min_norm)
+        scale = 1. / sqrt_c * artanh(sqrt_c * p_norm) / p_norm
+        return scale * p
 
+    def mobius_add(self, x, y, c, dim=-1):
+        x2 = x.pow(2).sum(dim=dim, keepdim=True)
+        y2 = y.pow(2).sum(dim=dim, keepdim=True)
+        xy = (x * y).sum(dim=dim, keepdim=True)
+        num = (1 - 2 * c * xy - c * y2) * x + (1 + c * x2) * y
+        denom = 1 - 2 * c * xy + c ** 2 * x2 * y2
+        return num / denom.clamp_min(self.min_norm)
 
-        return torch.where(cond, exp, retr)
+    def mobius_matvec(self, m, x, c):
+        sqrt_c = c ** 0.5
+        #print(m.shape)
+        x_norm = x.norm(dim=-1, keepdim=True, p=2).clamp_min(self.min_norm)
+        #print(torch.isnan(m).sum())
+        mx = x @ m.transpose(-1, -2)
+        mx_norm = mx.norm(dim=-1, keepdim=True, p=2).clamp_min(self.min_norm)
+        #print(torch.isnan(x_norm).sum())
+        res_c = tanh(mx_norm / x_norm * artanh(sqrt_c * x_norm)) * mx / (mx_norm * sqrt_c)
+        cond = (mx == 0).prod(-1, keepdim=True, dtype=torch.uint8)
+        res_0 = torch.zeros(1, dtype=res_c.dtype, device=res_c.device)
+        res = torch.where(cond, res_0, res_c)
+        return res
 
-    def logmap(self, p1, p2, c=1):
-        u = self.proj_tan(p1, p2 - p1,c)
-        #print("logmap")
-        dist = self.dist(p1, p2, keepdim = True)
-        #print(dist)
-        #print("-------")
-        # If the two points are "far apart", correct the norm.
-        cond = dist.gt(self.eps[dist.dtype])
-
-        #print(cond)
-        #print("------")
-        #print(dist.shape)
-        #print(u.shape)
-        #print(u*dist)
-        #print(torch.isnan(u * dist / u.norm(2,dim=-1, keepdim=True)).sum())
-        return torch.where(cond, u * dist / u.norm(2,dim=-1, keepdim=True).clamp(min = 1e-8), u)
-
-    def expmap0(self, u, c=1):
-        
-        return self.expmap(u, self.proj(torch.ones(u.shape),c), c)
-    
-
-    def logmap0(self, p, c=1):
-
-
-        return self.logmap(p, self.proj(torch.ones(p.shape),c),c)
-
-
-    def init_weights(self, w, c=1, irange=1e-5):
+    def init_weights(self, w, c, irange=1e-5):
         w.data.uniform_(-irange, irange)
         return w
 
-    def inner(self,p, c, u, v=None, keepdim=False):
+    def _gyration(self, u, v, w, c, dim: int = -1):
+        u2 = u.pow(2).sum(dim=dim, keepdim=True)
+        v2 = v.pow(2).sum(dim=dim, keepdim=True)
+        uv = (u * v).sum(dim=dim, keepdim=True)
+        uw = (u * w).sum(dim=dim, keepdim=True)
+        vw = (v * w).sum(dim=dim, keepdim=True)
+        c2 = c ** 2
+        a = -c2 * uw * v2 - c * vw + 2 * c2 * uv * vw
+        b = -c2 * vw * u2 + c * uw
+        d = 1 - 2 * c * uv + c2 * u2 * v2
+        return w + 2 * (a * u + b * v) / d.clamp_min(self.min_norm)
+
+    def inner(self, x, c, u, v=None, keepdim=False, dim=-1):
         if v is None:
             v = u
+        lambda_x = self._lambda_x(x, c)
+        return lambda_x ** 2 * (u * v).sum(dim=dim, keepdim=keepdim)
 
-        #print(u)
-        #print(v)
-        #print( torch.cos(self.angle(u,v, c)))
-        #return torch.cos(self.angle(u,v, c))
-
-
-        if v is None:
-            v = u
-
-        #print(u)
-        #print("----------")
-        #print(v)
-        #print("++++++++++")
-        inner = (u * v).sum(-1, keepdim=keepdim)
-        #print(p.shape[:-1])
-        target_shape = broadcast_shapes(p.shape[:-1] + (1,) * keepdim, inner.shape)
-        #print(target_shape)
-        #print(inner.expand(target_shape))
-        return inner.expand(target_shape)
-
-    def ptransp(self, x, y, v, c=1):
-    
-        return self.proj_tan(y,v)
-
-    def dist(self, x: torch.Tensor, y: torch.Tensor, *, keepdim=False) -> torch.Tensor:
-        #print(x)
-        #print(y)
-        #uu = self.proj(x,1.)
-        #print(uu.shape)
-        #vv = self.proj(y,1.)
-        #dot_prod = dot(uu, vv)
-        #print(dot_prod.shape)
-        #return torch.acos(torch.clamp(dot_prod, -1+self.eps[dot_prod.dtype], 1-self.eps[dot_prod.dtype]))
-        
-        
-        #print(y)
-        #print("_________")
-        inner = self.inner(x,1, x, y, keepdim=keepdim).clamp(-.999999, .999999)
-        #print(inner.shape)
-        #print(torch.isnan(inner).sum())
-        return torch.acos(inner)
-    
-    def mobius_add(self, x, y, c=1, dim=-1):
-        return x + y
-
-    def mobius_matvec(self, m, x, c=1):
-        mx = x @ m.transpose(-1, -2)
-        return mx
+    def ptransp(self, x, y, u, c):
+        lambda_x = self._lambda_x(x, c)
+        lambda_y = self._lambda_x(y, c)
+        return self._gyration(y, -x, u, c) * lambda_x / lambda_y

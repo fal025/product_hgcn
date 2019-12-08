@@ -17,7 +17,7 @@ class Decoder(nn.Module):
         self.c = c
 
     def decode(self, x, adj):
-        print("decoder super")
+        #print("decoder super")
         if self.decode_adj:
             input = (x, adj)
             probs, _ = self.cls.forward(input)
@@ -72,13 +72,12 @@ class LinearDecoder(Decoder):
                 else:
                     raise ValueError("Invalide string in the manifold")
                 count = int(word[i+1])
-                for j in range(count):
-                    manifold_array.append(getattr(manifolds, man_name)())
+                #for j in range(count):
+                manifold_array.append((getattr(manifolds, man_name)(),count))
                     
             self.manifold_name = "productManifold"
             self.manifold = getattr(manifolds, self.manifold_name)(manifold_array,args.dim)
 
-                    
         else:
             self.manifold = getattr(manifolds, args.manifold)()
 

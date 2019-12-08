@@ -22,11 +22,15 @@ class PoincareBall(Manifold):
 
     def sqdist(self, p1, p2, c):
         sqrt_c = c ** 0.5
+
+        #print(torch.isnan(p1).sum(),torch.isnan(p2).sum() )
+        
         dist_c = artanh(
             sqrt_c * self.mobius_add(-p1, p2, c, dim=-1).norm(dim=-1, p=2, keepdim=False)
         )
+        #print(torch.isnan(dist_c).sum())
         dist = dist_c * 2 / sqrt_c
-        return dist ** 2
+        return (dist ** 2).clamp(max = 75)
 
     def _lambda_x(self, x, c):
         x_sqnorm = torch.sum(x.data.pow(2), dim=-1, keepdim=True)

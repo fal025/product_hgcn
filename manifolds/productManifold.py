@@ -41,19 +41,23 @@ class productManifold(Manifold):
 
     def __init__(self, manifolds, total_dim):
         super(productManifold,self).__init__()
-        self.manifolds = manifolds
+        self.manifolds = [x[0] for x in manifolds]
         self.name = "productManifold"
 
         self.num_man = len(manifolds)
 
         self.slices = []
+        self.total_ratio = 0
         #dtype = None
         pos0 = 0
         for i, manifold in enumerate(manifolds):
 
-            pos1 = pos0 + 1
+            #print(manifold[1])
+            pos1 = pos0 + manifold[1]
+            self.total_ratio += manifold[1]
             self.slices.append(slice(pos0, pos1))
             pos0 = pos1
+        #print(self.total_ratio)
 
     def sqdist(self, p1, p2, c):
         """Squared distance between pairs of points."""
@@ -67,7 +71,7 @@ class productManifold(Manifold):
                 (*mini_dist2.shape[:target_batch_dim], -1)
             ).sum(-1)
             mini_dists2.append(mini_dist2)
-        result = sum(mini_dists2)
+        result = sum(mini_dists2).clamp(max = 75)
         return result
 
     def egrad2rgrad(self, p, dp, c):
@@ -93,6 +97,7 @@ class productManifold(Manifold):
     def proj(self, p, c):
         """Projects point p on the manifold."""
         projected = []
+
         #print(self.manifolds)
         for i, manifold in enumerate(self.manifolds):
             #print("proj")
@@ -173,7 +178,7 @@ class productManifold(Manifold):
         #if not res.requires_grad:
         #    raise ValueError
 
-        #res.retain_grad()
+        res.retain_grad()
 
         return res
 
@@ -310,7 +315,7 @@ class productManifold(Manifold):
 
     def mobius_matvec(self, m, x, c):
 
-        target_batch_dim = _calculate_target_batch_dim(m.dim(), x.dim())
+        """target_batch_dim = _calculate_target_batch_dim(m.dim(), x.dim())
         transported_tensors = []
         #print("mobius_matvec")
         #print(x.shape)
@@ -318,7 +323,7 @@ class productManifold(Manifold):
         for i, manifold in enumerate(self.manifolds):
             #point = m
             if m.shape[-1] == x.shape[-1]:
-                point = self.take_submanifold_value(m, i)
+                point = self.take_submanifold_value(m, i, True)
             else: 
                 point = self.take_submanifold_value(m, i, is_matvec = True)
                 
@@ -339,7 +344,40 @@ class productManifold(Manifold):
         res =  torch.cat(transported_tensors, -1)
 
         #print(res.shape)
+        return res"""
+
+
+        target_batch_dim = _calculate_target_batch_dim(m.dim(), x.dim())
+        transported_tensors = []
+        #print("mobius_matvec")
+        #print(x.shape)
+        #print(m.shape)
+        #res = m
+        for i, manifold in enumerate(self.manifolds):
+            #point = m
+            #if m.shape[-1] == x.shape[-1]:
+            point = self.take_submanifold_value(m, i, is_matvec = True)
+            #else: 
+            #    point = self.take_submanifold_value(m, i, is_matvec = True)
+                
+            
+            #print(x.shape)
+            #point1 = x
+            point1 = self.take_submanifold_value(x, i)
+            #print("point.shape", point.shape)
+            #print(point1.shape)
+            mob_matvec = manifold.mobius_matvec(point, point1, c)
+            mob_matvec = mob_matvec.reshape(
+                (*mob_matvec.shape[:target_batch_dim], -1)
+            )
+            #print(mob_matvec.shape)
+            transported_tensors.append(mob_matvec)
+        
+        res =  torch.cat(transported_tensors, -1)
+        #print(res.shape)
+        #print("--------")
         return res
+
 
 
     def init_weights(self, w, c, irange=1e-5):
@@ -385,6 +423,8 @@ class productManifold(Manifold):
     def ptransp(self, x, y, u, c):
         target_batch_dim = _calculate_target_batch_dim(x.dim(), y.dim(), u.dim())
         transported_tensors = []
+        #print("ptransp")
+        #print(x.shape, y.shape, y.shape)
         for i, manifold in enumerate(self.manifolds):
 
             point = self.take_submanifold_value(x, i)
@@ -397,7 +437,12 @@ class productManifold(Manifold):
                 (*transported.shape[:target_batch_dim], -1)
             )
             transported_tensors.append(transported)
-        return torch.cat(transported_tensors, -1)
+
+        res = torch.cat(transported_tensors, -1)
+
+        #print(res.shape)
+
+        return res
 
     
     def take_submanifold_value(
@@ -418,14 +463,13 @@ class productManifold(Manifold):
         -------
         torch.Tensor
         """
+        #print(x.shape)
         #slc_length = int(x.shape[-1] / self.num_man)
         
-        if not is_matvec:
-
-            slc_length = int(x.shape[-1] / self.num_man)
-        else:
-            slc_length = int(x.shape[-2] / self.num_man)
-            
+        slc_length = int(x.shape[-1] / self.total_ratio)
+        if is_matvec:
+            slc_length_col = int(x.shape[-2] / self.total_ratio)
+        #print(slc_length)
         slc = self.slices[i]
         #print(slc)
         #print(slc.start, slc.stop, slc.stop - slc.start)
@@ -434,13 +478,23 @@ class productManifold(Manifold):
         if x.shape[-1] - (start + slc_length)< slc_length:
             length = x.shape[-1] - start
 
-        part = x.narrow(-1, start, length)
+        if is_matvec:
+            start_col = slc.start * slc_length_col
+            length_col =  (slc.stop - slc.start) * slc_length_col
+            if x.shape[-2] - (start_col + slc_length_col)< slc_length_col:
+                length_col = x.shape[-2] - start_col
+
+            #print(start_col, length_col)
+
+        
+        #part = x.narrow(-1, start, length)
 
         if not is_matvec:
             part = x.narrow(-1, start, length)
         else:
-            part = x.narrow(-2, start, length)
-            
+            part = torch.zeros((length_col,length)) + x[start_col:start_col+length_col, start:start+length]
+        
+        #print(part.shape)
         #print(part.shape)
 
         #if reshape:

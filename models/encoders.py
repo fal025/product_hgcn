@@ -111,8 +111,8 @@ class HypGCN(Encoder):
                 else:
                     raise ValueError("Invalide string in the manifold")
                 count = int(word[i+1])
-                for j in range(count):
-                    manifold_array.append(getattr(manifolds, man_name)())
+                #for j in range(count):
+                manifold_array.append((getattr(manifolds, man_name)(),count))
                 #print("__________")
                 #print(manifold_array)
             self.manifold_name = "productManifold"
