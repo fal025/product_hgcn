@@ -22,13 +22,13 @@ def run_test():
                     stdout, stderr = process.communicate()
                     process.wait()
 
-                    prefix = task + "_" + data + "_" + str(dim)+ "_" + "param"
+                    prefix = task + "_" + data + "_" + str(dim)+ "_" + param
                     stdout_name = prefix + ".out" 
                     stderr_name = prefix + ".err"
                     with open(stdout_name, "w") as out, open(stderr_name, "w") as err:
 
-                        out.write(stdout)
-                        err.write(stderr)
+                        out.write(stdout.decode("utf-8"))
+                        err.write(stderr.decode("utf-8"))
 
 def run_dummy_test():
 

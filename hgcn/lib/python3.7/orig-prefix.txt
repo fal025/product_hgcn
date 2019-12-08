@@ -1,1 +1,1 @@
-/Users/fangchenli/anaconda3
+/home/lifangchen0513_gmail_com/miniconda3
