@@ -1,0 +1,20 @@
+INFO:root:Using: cpu
+INFO:root:Using seed 1234.
+Traceback (most recent call last):
+  File "train.py", line 154, in <module>
+    train(args)
+  File "train.py", line 49, in train
+    data = load_data(args, os.path.join(os.environ['DATAPATH'], args.dataset))
+  File "/home/lifangchen0513_gmail_com/product_hgcn/utils/data_utils.py", line 20, in load_data
+    adj, args.val_prop, args.test_prop, args.split_seed
+  File "/home/lifangchen0513_gmail_com/product_hgcn/utils/data_utils.py", line 88, in mask_edges
+    x, y = sp.triu(sp.csr_matrix(1. - adj.toarray())).nonzero()
+  File "/home/lifangchen0513_gmail_com/product_hgcn/hgcn/lib/python3.7/site-packages/scipy/sparse/compressed.py", line 88, in __init__
+    self._set_self(self.__class__(coo_matrix(arg1, dtype=dtype)))
+  File "/home/lifangchen0513_gmail_com/product_hgcn/hgcn/lib/python3.7/site-packages/scipy/sparse/coo.py", line 198, in __init__
+    self._check()
+  File "/home/lifangchen0513_gmail_com/product_hgcn/hgcn/lib/python3.7/site-packages/scipy/sparse/coo.py", line 280, in _check
+    self.col = np.asarray(self.col, dtype=idx_dtype)
+  File "/home/lifangchen0513_gmail_com/product_hgcn/hgcn/lib/python3.7/site-packages/numpy/core/numeric.py", line 538, in asarray
+    return array(a, dtype, copy=False, order=order)
+MemoryError

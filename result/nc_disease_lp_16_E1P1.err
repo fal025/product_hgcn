@@ -1,0 +1,12 @@
+INFO:root:Using: cpu
+INFO:root:Using seed 1234.
+Traceback (most recent call last):
+  File "train.py", line 154, in <module>
+    train(args)
+  File "train.py", line 49, in train
+    data = load_data(args, os.path.join(os.environ['DATAPATH'], args.dataset))
+  File "/home/lifangchen0513_gmail_com/product_hgcn/utils/data_utils.py", line 14, in load_data
+    data = load_data_nc(args.dataset, args.use_feats, datapath, args.split_seed)
+  File "/home/lifangchen0513_gmail_com/product_hgcn/utils/data_utils.py", line 162, in load_data_nc
+    raise FileNotFoundError('Dataset {} is not supported.'.format(dataset))
+FileNotFoundError: Dataset disease_lp is not supported.

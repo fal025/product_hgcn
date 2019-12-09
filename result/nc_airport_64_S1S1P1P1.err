@@ -1,0 +1,66 @@
+INFO:root:Using: cpu
+INFO:root:Using seed 1234.
+INFO:root:Num classes: 4
+INFO:root:NCModel(
+  (encoder): HypGCN(
+    (layers): Sequential(
+      (0): HyperbolicGraphConvolution(
+        (linear): HypLinear(in_features=11, out_features=64, c=tensor([1.]))
+        (agg): HypAgg(c=tensor([1.]), use_att=0)
+        (hyp_act): HypAct(c_in=tensor([1.]), c_out=tensor([1.]))
+      )
+    )
+  )
+  (decoder): LinearDecoder(
+    in_features=64, out_features=4, bias=0, c=tensor([1.])
+    (cls): Linear(
+      (linear): Linear(in_features=64, out_features=4, bias=False)
+    )
+  )
+)
+INFO:root:Total number of parameters: 1024
+INFO:root:Epoch: 0005 lr: 0.01 train_loss: 1.3144 train_acc: 0.3621 train_f1: 0.3621 time: 0.2116s
+INFO:root:Epoch: 0005 val_loss: 1.2934 val_acc: 0.5019 val_f1: 0.5019
+INFO:root:Epoch: 0010 lr: 0.01 train_loss: 1.3116 train_acc: 0.3933 train_f1: 0.3933 time: 0.2050s
+INFO:root:Epoch: 0010 val_loss: 1.2351 val_acc: 0.4905 val_f1: 0.4905
+INFO:root:Epoch: 0015 lr: 0.01 train_loss: 1.2132 train_acc: 0.3790 train_f1: 0.3790 time: 0.2028s
+INFO:root:Epoch: 0015 val_loss: 1.1853 val_acc: 0.4847 val_f1: 0.4847
+INFO:root:Epoch: 0020 lr: 0.01 train_loss: 1.2071 train_acc: 0.3841 train_f1: 0.3841 time: 0.2033s
+INFO:root:Epoch: 0020 val_loss: 1.1525 val_acc: 0.4828 val_f1: 0.4828
+INFO:root:Epoch: 0025 lr: 0.01 train_loss: 1.2317 train_acc: 0.3850 train_f1: 0.3850 time: 0.2171s
+INFO:root:Epoch: 0025 val_loss: 1.1344 val_acc: 0.4599 val_f1: 0.4599
+INFO:root:Epoch: 0030 lr: 0.01 train_loss: 1.2124 train_acc: 0.3734 train_f1: 0.3734 time: 0.2055s
+INFO:root:Epoch: 0030 val_loss: 1.1223 val_acc: 0.4542 val_f1: 0.4542
+INFO:root:Epoch: 0035 lr: 0.01 train_loss: 1.1697 train_acc: 0.4203 train_f1: 0.4203 time: 0.2027s
+INFO:root:Epoch: 0035 val_loss: 1.1197 val_acc: 0.4389 val_f1: 0.4389
+INFO:root:Epoch: 0040 lr: 0.01 train_loss: 1.1592 train_acc: 0.4379 train_f1: 0.4379 time: 0.2081s
+INFO:root:Epoch: 0040 val_loss: 1.1200 val_acc: 0.4637 val_f1: 0.4637
+INFO:root:Epoch: 0045 lr: 0.01 train_loss: 1.1937 train_acc: 0.4194 train_f1: 0.4194 time: 0.2048s
+INFO:root:Epoch: 0045 val_loss: 1.1091 val_acc: 0.4485 val_f1: 0.4485
+INFO:root:Epoch: 0050 lr: 0.01 train_loss: 1.1957 train_acc: 0.3942 train_f1: 0.3942 time: 0.2063s
+INFO:root:Epoch: 0050 val_loss: 1.0984 val_acc: 0.4447 val_f1: 0.4447
+INFO:root:Epoch: 0055 lr: 0.01 train_loss: 1.1642 train_acc: 0.4254 train_f1: 0.4254 time: 0.2052s
+INFO:root:Epoch: 0055 val_loss: 1.0886 val_acc: 0.4466 val_f1: 0.4466
+INFO:root:Epoch: 0060 lr: 0.01 train_loss: 1.1857 train_acc: 0.4177 train_f1: 0.4177 time: 0.2073s
+INFO:root:Epoch: 0060 val_loss: 1.0805 val_acc: 0.4447 val_f1: 0.4447
+INFO:root:Epoch: 0065 lr: 0.01 train_loss: 1.1770 train_acc: 0.3945 train_f1: 0.3945 time: 0.2101s
+INFO:root:Epoch: 0065 val_loss: 1.0791 val_acc: 0.4599 val_f1: 0.4599
+INFO:root:Epoch: 0070 lr: 0.01 train_loss: 1.1725 train_acc: 0.4402 train_f1: 0.4402 time: 0.2112s
+INFO:root:Epoch: 0070 val_loss: 1.0829 val_acc: 0.4924 val_f1: 0.4924
+INFO:root:Epoch: 0075 lr: 0.01 train_loss: 1.1622 train_acc: 0.4307 train_f1: 0.4307 time: 0.2060s
+INFO:root:Epoch: 0075 val_loss: 1.0795 val_acc: 0.4943 val_f1: 0.4943
+INFO:root:Epoch: 0080 lr: 0.01 train_loss: 1.1665 train_acc: 0.4180 train_f1: 0.4180 time: 0.2094s
+INFO:root:Epoch: 0080 val_loss: 1.0779 val_acc: 0.4943 val_f1: 0.4943
+INFO:root:Epoch: 0085 lr: 0.01 train_loss: 1.1922 train_acc: 0.4004 train_f1: 0.4004 time: 0.2091s
+INFO:root:Epoch: 0085 val_loss: 1.0768 val_acc: 0.4943 val_f1: 0.4943
+INFO:root:Epoch: 0090 lr: 0.01 train_loss: 1.1605 train_acc: 0.4162 train_f1: 0.4162 time: 0.2100s
+INFO:root:Epoch: 0090 val_loss: 1.0653 val_acc: 0.4466 val_f1: 0.4466
+INFO:root:Epoch: 0095 lr: 0.01 train_loss: 1.1650 train_acc: 0.4284 train_f1: 0.4284 time: 0.2131s
+INFO:root:Epoch: 0095 val_loss: 1.0644 val_acc: 0.4466 val_f1: 0.4466
+INFO:root:Epoch: 0100 lr: 0.01 train_loss: 1.1528 train_acc: 0.4358 train_f1: 0.4358 time: 0.2126s
+INFO:root:Epoch: 0100 val_loss: 1.0627 val_acc: 0.4523 val_f1: 0.4523
+INFO:root:Early stopping
+INFO:root:Optimization Finished!
+INFO:root:Total time elapsed: 32.1313s
+INFO:root:Val set results: val_loss: 1.3303 val_acc: 0.5057 val_f1: 0.5057
+INFO:root:Test set results: test_loss: 1.3290 test_acc: 0.4809 test_f1: 0.4809

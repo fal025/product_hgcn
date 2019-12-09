@@ -1,0 +1,107 @@
+INFO:root:Using: cpu
+INFO:root:Using seed 1234.
+INFO:root:LPModel(
+  (encoder): HypGCN(
+    (layers): Sequential(
+      (0): HyperbolicGraphConvolution(
+        (linear): HypLinear(in_features=11, out_features=8, c=tensor([1.]))
+        (agg): HypAgg(c=tensor([1.]), use_att=0)
+        (hyp_act): HypAct(c_in=tensor([1.]), c_out=tensor([1.]))
+      )
+      (1): HyperbolicGraphConvolution(
+        (linear): HypLinear(in_features=8, out_features=8, c=tensor([1.]))
+        (agg): HypAgg(c=tensor([1.]), use_att=0)
+        (hyp_act): HypAct(c_in=tensor([1.]), c_out=tensor([1.]))
+      )
+    )
+  )
+  (dc): FermiDiracDecoder()
+)
+INFO:root:Total number of parameters: 168
+INFO:root:Epoch: 0005 lr: 0.01 train_loss: 1.8189 train_roc: 0.8572 train_ap: 0.8494 time: 0.0354s
+INFO:root:Epoch: 0005 val_loss: 1.9865 val_roc: 0.5493 val_ap: 0.5356
+INFO:root:Epoch: 0010 lr: 0.01 train_loss: 1.6953 train_roc: 0.8989 train_ap: 0.9014 time: 0.0348s
+INFO:root:Epoch: 0010 val_loss: 1.9737 val_roc: 0.5469 val_ap: 0.5374
+INFO:root:Epoch: 0015 lr: 0.01 train_loss: 1.7397 train_roc: 0.8930 train_ap: 0.8985 time: 0.0359s
+INFO:root:Epoch: 0015 val_loss: 1.9601 val_roc: 0.5446 val_ap: 0.5350
+INFO:root:Epoch: 0020 lr: 0.01 train_loss: 1.8461 train_roc: 0.8508 train_ap: 0.8390 time: 0.0355s
+INFO:root:Epoch: 0020 val_loss: 1.9486 val_roc: 0.5406 val_ap: 0.5301
+INFO:root:Epoch: 0025 lr: 0.01 train_loss: 1.7452 train_roc: 0.8860 train_ap: 0.8903 time: 0.0371s
+INFO:root:Epoch: 0025 val_loss: 1.9382 val_roc: 0.5378 val_ap: 0.5294
+INFO:root:Epoch: 0030 lr: 0.01 train_loss: 1.7688 train_roc: 0.8798 train_ap: 0.8670 time: 0.0351s
+INFO:root:Epoch: 0030 val_loss: 1.9288 val_roc: 0.5334 val_ap: 0.5286
+INFO:root:Epoch: 0035 lr: 0.01 train_loss: 1.6453 train_roc: 0.8785 train_ap: 0.8826 time: 0.0359s
+INFO:root:Epoch: 0035 val_loss: 1.9201 val_roc: 0.5329 val_ap: 0.5300
+INFO:root:Epoch: 0040 lr: 0.01 train_loss: 1.7470 train_roc: 0.8506 train_ap: 0.8465 time: 0.0384s
+INFO:root:Epoch: 0040 val_loss: 1.9115 val_roc: 0.5306 val_ap: 0.5308
+INFO:root:Epoch: 0045 lr: 0.01 train_loss: 1.6419 train_roc: 0.9080 train_ap: 0.9066 time: 0.0357s
+INFO:root:Epoch: 0045 val_loss: 1.9031 val_roc: 0.5312 val_ap: 0.5330
+INFO:root:Epoch: 0050 lr: 0.01 train_loss: 1.7193 train_roc: 0.8370 train_ap: 0.8351 time: 0.0377s
+INFO:root:Epoch: 0050 val_loss: 1.8928 val_roc: 0.5303 val_ap: 0.5312
+INFO:root:Epoch: 0055 lr: 0.01 train_loss: 1.7236 train_roc: 0.8457 train_ap: 0.8411 time: 0.0350s
+INFO:root:Epoch: 0055 val_loss: 1.8816 val_roc: 0.5326 val_ap: 0.5324
+INFO:root:Epoch: 0060 lr: 0.01 train_loss: 1.7249 train_roc: 0.8848 train_ap: 0.8918 time: 0.0342s
+INFO:root:Epoch: 0060 val_loss: 1.8713 val_roc: 0.5353 val_ap: 0.5330
+INFO:root:Epoch: 0065 lr: 0.01 train_loss: 1.6276 train_roc: 0.8858 train_ap: 0.8844 time: 0.0358s
+INFO:root:Epoch: 0065 val_loss: 1.8616 val_roc: 0.5359 val_ap: 0.5327
+INFO:root:Epoch: 0070 lr: 0.01 train_loss: 1.7572 train_roc: 0.8426 train_ap: 0.8276 time: 0.0353s
+INFO:root:Epoch: 0070 val_loss: 1.8531 val_roc: 0.5336 val_ap: 0.5312
+INFO:root:Epoch: 0075 lr: 0.01 train_loss: 1.6305 train_roc: 0.8952 train_ap: 0.8971 time: 0.0354s
+INFO:root:Epoch: 0075 val_loss: 1.8449 val_roc: 0.5345 val_ap: 0.5333
+INFO:root:Epoch: 0080 lr: 0.01 train_loss: 1.6691 train_roc: 0.8599 train_ap: 0.8580 time: 0.0353s
+INFO:root:Epoch: 0080 val_loss: 1.8363 val_roc: 0.5327 val_ap: 0.5324
+INFO:root:Epoch: 0085 lr: 0.01 train_loss: 1.6054 train_roc: 0.9082 train_ap: 0.9142 time: 0.0349s
+INFO:root:Epoch: 0085 val_loss: 1.8280 val_roc: 0.5343 val_ap: 0.5364
+INFO:root:Epoch: 0090 lr: 0.01 train_loss: 1.5853 train_roc: 0.8954 train_ap: 0.8975 time: 0.0359s
+INFO:root:Epoch: 0090 val_loss: 1.8213 val_roc: 0.5367 val_ap: 0.5407
+INFO:root:Epoch: 0095 lr: 0.01 train_loss: 1.5597 train_roc: 0.9075 train_ap: 0.9116 time: 0.0344s
+INFO:root:Epoch: 0095 val_loss: 1.8161 val_roc: 0.5408 val_ap: 0.5458
+INFO:root:Epoch: 0100 lr: 0.01 train_loss: 1.7478 train_roc: 0.8715 train_ap: 0.8658 time: 0.0347s
+INFO:root:Epoch: 0100 val_loss: 1.8124 val_roc: 0.5420 val_ap: 0.5472
+INFO:root:Epoch: 0105 lr: 0.01 train_loss: 1.6564 train_roc: 0.8473 train_ap: 0.8322 time: 0.0358s
+INFO:root:Epoch: 0105 val_loss: 1.8080 val_roc: 0.5431 val_ap: 0.5482
+INFO:root:Epoch: 0110 lr: 0.01 train_loss: 1.5399 train_roc: 0.8988 train_ap: 0.9001 time: 0.0349s
+INFO:root:Epoch: 0110 val_loss: 1.8022 val_roc: 0.5441 val_ap: 0.5480
+INFO:root:Epoch: 0115 lr: 0.01 train_loss: 1.6163 train_roc: 0.8651 train_ap: 0.8685 time: 0.0354s
+INFO:root:Epoch: 0115 val_loss: 1.7982 val_roc: 0.5440 val_ap: 0.5474
+INFO:root:Epoch: 0120 lr: 0.01 train_loss: 1.5783 train_roc: 0.9024 train_ap: 0.9037 time: 0.0344s
+INFO:root:Epoch: 0120 val_loss: 1.7946 val_roc: 0.5418 val_ap: 0.5420
+INFO:root:Epoch: 0125 lr: 0.01 train_loss: 1.7590 train_roc: 0.8006 train_ap: 0.7450 time: 0.0351s
+INFO:root:Epoch: 0125 val_loss: 1.7919 val_roc: 0.5416 val_ap: 0.5409
+INFO:root:Epoch: 0130 lr: 0.01 train_loss: 1.5002 train_roc: 0.8955 train_ap: 0.8978 time: 0.0343s
+INFO:root:Epoch: 0130 val_loss: 1.7888 val_roc: 0.5413 val_ap: 0.5379
+INFO:root:Epoch: 0135 lr: 0.01 train_loss: 1.7645 train_roc: 0.8502 train_ap: 0.8492 time: 0.0346s
+INFO:root:Epoch: 0135 val_loss: 1.7837 val_roc: 0.5395 val_ap: 0.5328
+INFO:root:Epoch: 0140 lr: 0.01 train_loss: 1.7077 train_roc: 0.9043 train_ap: 0.9080 time: 0.0341s
+INFO:root:Epoch: 0140 val_loss: 1.7785 val_roc: 0.5365 val_ap: 0.5269
+INFO:root:Epoch: 0145 lr: 0.01 train_loss: 1.5468 train_roc: 0.8897 train_ap: 0.8935 time: 0.0341s
+INFO:root:Epoch: 0145 val_loss: 1.7757 val_roc: 0.5308 val_ap: 0.5203
+INFO:root:Epoch: 0150 lr: 0.01 train_loss: 1.6206 train_roc: 0.9079 train_ap: 0.9123 time: 0.0350s
+INFO:root:Epoch: 0150 val_loss: 1.7748 val_roc: 0.5270 val_ap: 0.5132
+INFO:root:Epoch: 0155 lr: 0.01 train_loss: 1.6355 train_roc: 0.8657 train_ap: 0.8655 time: 0.0350s
+INFO:root:Epoch: 0155 val_loss: 1.7737 val_roc: 0.5238 val_ap: 0.5109
+INFO:root:Epoch: 0160 lr: 0.01 train_loss: 1.4555 train_roc: 0.8873 train_ap: 0.8796 time: 0.0349s
+INFO:root:Epoch: 0160 val_loss: 1.7706 val_roc: 0.5233 val_ap: 0.5111
+INFO:root:Epoch: 0165 lr: 0.01 train_loss: 1.5695 train_roc: 0.8912 train_ap: 0.8903 time: 0.0341s
+INFO:root:Epoch: 0165 val_loss: 1.7676 val_roc: 0.5222 val_ap: 0.5108
+INFO:root:Epoch: 0170 lr: 0.01 train_loss: 1.5300 train_roc: 0.8827 train_ap: 0.8831 time: 0.0354s
+INFO:root:Epoch: 0170 val_loss: 1.7648 val_roc: 0.5224 val_ap: 0.5103
+INFO:root:Epoch: 0175 lr: 0.01 train_loss: 1.6381 train_roc: 0.8681 train_ap: 0.8612 time: 0.0348s
+INFO:root:Epoch: 0175 val_loss: 1.7616 val_roc: 0.5232 val_ap: 0.5124
+INFO:root:Epoch: 0180 lr: 0.01 train_loss: 1.6365 train_roc: 0.8656 train_ap: 0.8656 time: 0.0367s
+INFO:root:Epoch: 0180 val_loss: 1.7579 val_roc: 0.5242 val_ap: 0.5126
+INFO:root:Epoch: 0185 lr: 0.01 train_loss: 1.5647 train_roc: 0.8978 train_ap: 0.8972 time: 0.0351s
+INFO:root:Epoch: 0185 val_loss: 1.7554 val_roc: 0.5253 val_ap: 0.5150
+INFO:root:Epoch: 0190 lr: 0.01 train_loss: 1.4977 train_roc: 0.8980 train_ap: 0.8935 time: 0.0361s
+INFO:root:Epoch: 0190 val_loss: 1.7542 val_roc: 0.5247 val_ap: 0.5150
+INFO:root:Epoch: 0195 lr: 0.01 train_loss: 1.5733 train_roc: 0.8389 train_ap: 0.8409 time: 0.0349s
+INFO:root:Epoch: 0195 val_loss: 1.7533 val_roc: 0.5227 val_ap: 0.5133
+INFO:root:Epoch: 0200 lr: 0.01 train_loss: 1.7436 train_roc: 0.8608 train_ap: 0.8568 time: 0.0346s
+INFO:root:Epoch: 0200 val_loss: 1.7501 val_roc: 0.5230 val_ap: 0.5151
+INFO:root:Epoch: 0205 lr: 0.01 train_loss: 1.5636 train_roc: 0.8929 train_ap: 0.8977 time: 0.0345s
+INFO:root:Epoch: 0205 val_loss: 1.7459 val_roc: 0.5211 val_ap: 0.5136
+INFO:root:Early stopping
+INFO:root:Optimization Finished!
+INFO:root:Total time elapsed: 12.3233s
+INFO:root:Val set results: val_loss: 1.8053 val_roc: 0.5446 val_ap: 0.5488
+INFO:root:Test set results: test_loss: 1.7933 test_roc: 0.4813 test_ap: 0.4831

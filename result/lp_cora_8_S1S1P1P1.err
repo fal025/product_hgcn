@@ -1,0 +1,67 @@
+INFO:root:Using: cpu
+INFO:root:Using seed 1234.
+INFO:root:LPModel(
+  (encoder): HypGCN(
+    (layers): Sequential(
+      (0): HyperbolicGraphConvolution(
+        (linear): HypLinear(in_features=1433, out_features=8, c=tensor([1.]))
+        (agg): HypAgg(c=tensor([1.]), use_att=0)
+        (hyp_act): HypAct(c_in=tensor([1.]), c_out=tensor([1.]))
+      )
+      (1): HyperbolicGraphConvolution(
+        (linear): HypLinear(in_features=8, out_features=8, c=tensor([1.]))
+        (agg): HypAgg(c=tensor([1.]), use_att=0)
+        (hyp_act): HypAct(c_in=tensor([1.]), c_out=tensor([1.]))
+      )
+    )
+  )
+  (dc): FermiDiracDecoder()
+)
+INFO:root:Total number of parameters: 11544
+INFO:root:Epoch: 0005 lr: 0.01 train_loss: 2.2533 train_roc: 0.7763 train_ap: 0.7382 time: 0.3991s
+INFO:root:Epoch: 0005 val_loss: 2.2537 val_roc: 0.6917 val_ap: 0.6861
+INFO:root:Epoch: 0010 lr: 0.01 train_loss: 2.2526 train_roc: 0.8091 train_ap: 0.7919 time: 0.3976s
+INFO:root:Epoch: 0010 val_loss: 2.2536 val_roc: 0.7117 val_ap: 0.7004
+INFO:root:Epoch: 0015 lr: 0.01 train_loss: 2.2539 train_roc: 0.5000 train_ap: 0.5000 time: 0.3972s
+INFO:root:Epoch: 0015 val_loss: 2.2535 val_roc: 0.7087 val_ap: 0.7065
+INFO:root:Epoch: 0020 lr: 0.01 train_loss: 2.2535 train_roc: 0.7647 train_ap: 0.7129 time: 0.3912s
+INFO:root:Epoch: 0020 val_loss: 2.2534 val_roc: 0.7061 val_ap: 0.6804
+INFO:root:Epoch: 0025 lr: 0.01 train_loss: 2.2515 train_roc: 0.7760 train_ap: 0.7279 time: 0.3973s
+INFO:root:Epoch: 0025 val_loss: 2.2532 val_roc: 0.7057 val_ap: 0.6691
+INFO:root:Epoch: 0030 lr: 0.01 train_loss: 2.2539 train_roc: 0.5000 train_ap: 0.5000 time: 0.3957s
+INFO:root:Epoch: 0030 val_loss: 2.2530 val_roc: 0.7032 val_ap: 0.6680
+INFO:root:Epoch: 0035 lr: 0.01 train_loss: 2.2535 train_roc: 0.7707 train_ap: 0.7204 time: 0.4310s
+INFO:root:Epoch: 0035 val_loss: 2.2528 val_roc: 0.7040 val_ap: 0.6663
+INFO:root:Epoch: 0040 lr: 0.01 train_loss: 2.2492 train_roc: 0.7878 train_ap: 0.7388 time: 0.3914s
+INFO:root:Epoch: 0040 val_loss: 2.2523 val_roc: 0.7054 val_ap: 0.6579
+INFO:root:Epoch: 0045 lr: 0.01 train_loss: 2.2484 train_roc: 0.7930 train_ap: 0.7577 time: 0.3921s
+INFO:root:Epoch: 0045 val_loss: 2.2515 val_roc: 0.7071 val_ap: 0.6673
+INFO:root:Epoch: 0050 lr: 0.01 train_loss: 2.2322 train_roc: 0.8176 train_ap: 0.7860 time: 0.4052s
+INFO:root:Epoch: 0050 val_loss: 2.2504 val_roc: 0.7078 val_ap: 0.6726
+INFO:root:Epoch: 0055 lr: 0.01 train_loss: 2.2531 train_roc: 0.7796 train_ap: 0.7334 time: 0.3909s
+INFO:root:Epoch: 0055 val_loss: 2.2490 val_roc: 0.7054 val_ap: 0.6708
+INFO:root:Epoch: 0060 lr: 0.01 train_loss: 2.2433 train_roc: 0.7832 train_ap: 0.7392 time: 0.4049s
+INFO:root:Epoch: 0060 val_loss: 2.2478 val_roc: 0.7053 val_ap: 0.6655
+INFO:root:Epoch: 0065 lr: 0.01 train_loss: 2.2250 train_roc: 0.8208 train_ap: 0.7923 time: 0.4033s
+INFO:root:Epoch: 0065 val_loss: 2.2461 val_roc: 0.7013 val_ap: 0.6705
+INFO:root:Epoch: 0070 lr: 0.01 train_loss: 2.2538 train_roc: 0.7624 train_ap: 0.7056 time: 0.4116s
+INFO:root:Epoch: 0070 val_loss: 2.2441 val_roc: 0.6984 val_ap: 0.6662
+INFO:root:Epoch: 0075 lr: 0.01 train_loss: 2.2316 train_roc: 0.8108 train_ap: 0.7827 time: 0.3987s
+INFO:root:Epoch: 0075 val_loss: 2.2410 val_roc: 0.6993 val_ap: 0.6698
+INFO:root:Epoch: 0080 lr: 0.01 train_loss: 2.2513 train_roc: 0.7559 train_ap: 0.6997 time: 0.4107s
+INFO:root:Epoch: 0080 val_loss: 2.2361 val_roc: 0.7032 val_ap: 0.6787
+INFO:root:Epoch: 0085 lr: 0.01 train_loss: 2.2072 train_roc: 0.7974 train_ap: 0.7526 time: 0.4177s
+INFO:root:Epoch: 0085 val_loss: 2.2291 val_roc: 0.7063 val_ap: 0.6844
+INFO:root:Epoch: 0090 lr: 0.01 train_loss: 2.2497 train_roc: 0.8016 train_ap: 0.7544 time: 0.4096s
+INFO:root:Epoch: 0090 val_loss: 2.2187 val_roc: 0.7113 val_ap: 0.6942
+INFO:root:Epoch: 0095 lr: 0.01 train_loss: 2.1684 train_roc: 0.7791 train_ap: 0.7327 time: 0.4122s
+INFO:root:Epoch: 0095 val_loss: 2.2055 val_roc: 0.7118 val_ap: 0.6888
+INFO:root:Epoch: 0100 lr: 0.01 train_loss: 2.1501 train_roc: 0.7962 train_ap: 0.7703 time: 0.3967s
+INFO:root:Epoch: 0100 val_loss: 2.1866 val_roc: 0.7102 val_ap: 0.6757
+INFO:root:Epoch: 0105 lr: 0.01 train_loss: 2.1128 train_roc: 0.8002 train_ap: 0.7583 time: 0.4055s
+INFO:root:Epoch: 0105 val_loss: 2.1648 val_roc: 0.7081 val_ap: 0.6693
+INFO:root:Early stopping
+INFO:root:Optimization Finished!
+INFO:root:Total time elapsed: 73.1596s
+INFO:root:Val set results: val_loss: 2.2537 val_roc: 0.7122 val_ap: 0.7043
+INFO:root:Test set results: test_loss: 2.2537 test_roc: 0.6572 test_ap: 0.6370
