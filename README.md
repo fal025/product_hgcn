@@ -1,4 +1,4 @@
-CS229 project - product space GNN
+CS229 project - product space GCN
 ==================================================
 
 Adapted from https://github.com/HazyResearch/hgcn 
