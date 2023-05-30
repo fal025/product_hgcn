@@ -22,7 +22,9 @@ config_args = {
         'gamma': (0.5, 'gamma for lr scheduler'),
         'print-epoch': (True, ''),
         'grad-clip': (None, 'max norm for gradient clipping, or None for no gradient clipping'),
-        'min-epochs': (100, 'do not early stop before min-epochs')
+        'min-epochs': (100, 'do not early stop before min-epochs'),
+        'edge-path': (None, 'path to edge list for link prediction'),
+        'data-path': (None, 'path to data')
     },
     'model_config': {
         'task': ('nc', 'which tasks to train on, can be any of [lp, nc]'),
