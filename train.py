@@ -45,8 +45,10 @@ def train(args):
     logging.info("Using seed {}.".format(args.seed))
 
     # Load data
-    print(os.environ)
-    data = load_data(args, os.path.join(os.environ['DATAPATH'], args.dataset))
+    if args.dataset == 'emb':
+        data = load_data(args, args.data_path, args.edge_path)
+    else:
+        data = load_data(args, os.path.join(os.environ['DATAPATH'], args.dataset), args.edge_path)
     args.n_nodes, args.feat_dim = data['features'].shape
     if args.task == 'nc':
         Model = NCModel
