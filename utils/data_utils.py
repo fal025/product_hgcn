@@ -9,15 +9,18 @@ import scipy.sparse as sp
 import torch
 
 
-def load_data(args, datapath):
+def load_data(args, datapath, edge_path):
     if args.task == 'nc':
         data = load_data_nc(args.dataset, args.use_feats, datapath, args.split_seed)
     else:
-        data = load_data_lp(args.dataset, args.use_feats, datapath)
+        data = load_data_lp(args.dataset, args.use_feats, datapath, edge_path)
         adj = data['adj_train']
         if args.task == 'lp':
+            adj2 = None
+            if args.dataset == 'emb':
+                adj2 = data['adj_test']
             adj_train, train_edges, train_edges_false, val_edges, val_edges_false, test_edges, test_edges_false = mask_edges(
-                    adj, args.val_prop, args.test_prop, args.split_seed
+                    adj, args.val_prop, args.test_prop, args.split_seed, adj2=adj2
             )
             data['adj_train'] = adj_train
             data['train_edges'], data['train_edges_false'] = train_edges, train_edges_false
@@ -79,28 +82,71 @@ def augment(adj, features, normalize_feats=True):
 # ############### DATA SPLITS #####################################################
 
 
-def mask_edges(adj, val_prop, test_prop, seed):
-    np.random.seed(seed)  # get tp edges
-    x, y = sp.triu(adj).nonzero()
+# def mask_edges(adj, val_prop, test_prop, seed):
+#     np.random.seed(seed)  # get tp edges
+#     x, y = sp.triu(adj).nonzero()
+#     pos_edges = np.array(list(zip(x, y)))
+#     np.random.shuffle(pos_edges)
+#     # get tn edges
+#     x, y = sp.triu(sp.csr_matrix(1. - adj.toarray())).nonzero()
+#     neg_edges = np.array(list(zip(x, y)))
+#     np.random.shuffle(neg_edges)
+
+#     m_pos = len(pos_edges)
+#     n_val = int(m_pos * val_prop)
+#     n_test = int(m_pos * test_prop)
+#     val_edges, test_edges, train_edges = pos_edges[:n_val], pos_edges[n_val:n_test + n_val], pos_edges[n_test + n_val:]
+#     val_edges_false, test_edges_false = neg_edges[:n_val], neg_edges[n_val:n_test + n_val]
+#     train_edges_false = np.concatenate([neg_edges, val_edges, test_edges], axis=0)
+#     adj_train = sp.csr_matrix((np.ones(train_edges.shape[0]), (train_edges[:, 0], train_edges[:, 1])), shape=adj.shape)
+#     adj_train = adj_train + adj_train.T
+#     return adj_train, torch.LongTensor(train_edges), torch.LongTensor(train_edges_false), torch.LongTensor(val_edges), \
+#            torch.LongTensor(val_edges_false), torch.LongTensor(test_edges), torch.LongTensor(
+#             test_edges_false)  
+
+def mask_edges(adj1, val_prop, test_prop, seed, adj2=None):
+    np.random.seed(seed) 
+    x, y = sp.triu(adj1).nonzero()
     pos_edges = np.array(list(zip(x, y)))
     np.random.shuffle(pos_edges)
-    # get tn edges
-    x, y = sp.triu(sp.csr_matrix(1. - adj.toarray())).nonzero()
-    neg_edges = np.array(list(zip(x, y)))
-    np.random.shuffle(neg_edges)
 
-    m_pos = len(pos_edges)
-    n_val = int(m_pos * val_prop)
-    n_test = int(m_pos * test_prop)
-    val_edges, test_edges, train_edges = pos_edges[:n_val], pos_edges[n_val:n_test + n_val], pos_edges[n_test + n_val:]
-    val_edges_false, test_edges_false = neg_edges[:n_val], neg_edges[n_val:n_test + n_val]
-    train_edges_false = np.concatenate([neg_edges, val_edges, test_edges], axis=0)
-    adj_train = sp.csr_matrix((np.ones(train_edges.shape[0]), (train_edges[:, 0], train_edges[:, 1])), shape=adj.shape)
+    if adj2 is None:
+        x, y = sp.triu(sp.csr_matrix(1. - adj1.toarray())).nonzero()
+        neg_edges = np.array(list(zip(x, y)))
+        np.random.shuffle(neg_edges)
+
+        m_pos = len(pos_edges)
+        n_val = int(m_pos * float(val_prop))
+        n_test = int(m_pos * float(test_prop))
+
+        val_edges, test_edges, train_edges = pos_edges[:n_val], pos_edges[n_val:n_test + n_val], pos_edges[n_test + n_val:]
+        val_edges_false, test_edges_false = neg_edges[:n_val], neg_edges[n_val:n_test + n_val]
+        train_edges_false = np.concatenate([neg_edges, val_edges, test_edges], axis=0)
+
+    else:
+        x, y = sp.triu(adj2).nonzero()
+        pos_edges2 = np.array(list(zip(x, y)))
+        np.random.shuffle(pos_edges2)
+
+        x, y = sp.triu(sp.csr_matrix(1. - adj2.toarray())).nonzero()
+        neg_edges2 = np.array(list(zip(x, y)))
+        np.random.shuffle(neg_edges2)
+
+        m_pos = len(pos_edges2)
+        n_val = int(m_pos * float(val_prop))
+        n_test = int(m_pos * float(test_prop))
+
+        val_edges, test_edges = pos_edges2[:n_val], pos_edges2[n_val:n_test + n_val]
+        val_edges_false, test_edges_false = neg_edges2[:n_val], neg_edges2[n_val:n_test + n_val]
+
+        train_edges = pos_edges
+        train_edges_false = np.concatenate([neg_edges2, val_edges, test_edges], axis=0)
+
+    adj_train = sp.csr_matrix((np.ones(train_edges.shape[0]), (train_edges[:, 0], train_edges[:, 1])), shape=adj1.shape)
     adj_train = adj_train + adj_train.T
-    return adj_train, torch.LongTensor(train_edges), torch.LongTensor(train_edges_false), torch.LongTensor(val_edges), \
-           torch.LongTensor(val_edges_false), torch.LongTensor(test_edges), torch.LongTensor(
-            test_edges_false)  
 
+    return adj_train, torch.LongTensor(train_edges), torch.LongTensor(train_edges_false), torch.LongTensor(val_edges), \
+           torch.LongTensor(val_edges_false), torch.LongTensor(test_edges), torch.LongTensor(test_edges_false)
 
 def split_data(labels, val_prop, test_prop, seed):
     np.random.seed(seed)
@@ -130,13 +176,16 @@ def bin_feat(feat, bins):
 # ############### LINK PREDICTION DATA LOADERS ####################################
 
 
-def load_data_lp(dataset, use_feats, data_path):
+def load_data_lp(dataset, use_feats, data_path, edge_path):
     if dataset in ['cora', 'pubmed']:
         adj, features = load_citation_data(dataset, use_feats, data_path)[:2]
     elif dataset == 'disease_lp':
         adj, features = load_synthetic_data(dataset, use_feats, data_path)[:2]
     elif dataset == 'airport':
         adj, features = load_data_airport(dataset, data_path, return_label=False)
+    elif dataset == 'emb':
+        adj1, adj2, features = load_emb_data(dataset, data_path, edge_path)
+        return {'adj_train': adj1, 'adj_test': adj2, 'features': features}
     else:
         raise FileNotFoundError('Dataset {} is not supported.'.format(dataset))
     data = {'adj_train': adj, 'features': features}
@@ -168,6 +217,19 @@ def load_data_nc(dataset, use_feats, data_path, split_seed):
 
 
 # ############### DATASETS ####################################
+
+def load_emb_data(dataset, emb_path, edge_path):
+    emb = torch.load(emb_path).detach()
+    graph_num = edge_path.split('/')[-1].split('.')[0].split('_')[0]
+    pre_path = '/'.join(edge_path.split('/')[:-1])
+    string_edge_path = f"{pre_path}/{graph_num}_string_cleaned.edges"
+    print(emb_path)
+    print(string_edge_path)
+    G1 = nx.read_edgelist(edge_path)
+    G2 = nx.read_edgelist(string_edge_path)
+    adj1 = nx.adjacency_matrix(G1)
+    adj2 = nx.adjacency_matrix(G2)
+    return adj1, adj2, emb
 
 
 def load_citation_data(dataset_str, use_feats, data_path, split_seed=None):
