@@ -223,8 +223,6 @@ def load_emb_data(dataset, emb_path, edge_path):
     graph_num = edge_path.split('/')[-1].split('.')[0].split('_')[0]
     pre_path = '/'.join(edge_path.split('/')[:-1])
     string_edge_path = f"{pre_path}/{graph_num}_string_cleaned.edges"
-    print(emb_path)
-    print(string_edge_path)
     G1 = nx.read_edgelist(edge_path)
     G2 = nx.read_edgelist(string_edge_path)
     adj1 = nx.adjacency_matrix(G1)
