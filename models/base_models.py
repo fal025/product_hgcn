@@ -31,7 +31,6 @@ class BaseModel(nn.Module):
             manifold_array = []
             word = list(self.manifold_name)
             for i in range(0,len(word), 2):
-                #print(i)
                 if word[i] == "E":
                     man_name = "Euclidean"
                 elif word[i] == "P":
