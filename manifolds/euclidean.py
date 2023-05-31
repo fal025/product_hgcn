@@ -16,8 +16,6 @@ class Euclidean(Manifold):
         return p
 
     def sqdist(self, p1, p2, c):
-        #print(p1)
-        #print(p2)
         return (p1 - p2).pow(2).sum(dim=-1)
 
     def egrad2rgrad(self, p, dp, c):
@@ -33,22 +31,12 @@ class Euclidean(Manifold):
         return u
 
     def expmap(self, u, p, c):
-        #print("in exp")
-        #print((p).sum())
-       ## print(u.sum())
-        #print("----------")
-
         return p + u
 
     def logmap(self, p1, p2, c):
         return p2 - p1
 
     def expmap0(self, u, c):
-        #print("in exp 0")
-        #print((p).sum())
-        #print(u.sum())
-        #print("----------")
-
         return u
 
     def logmap0(self, p, c):
@@ -66,8 +54,6 @@ class Euclidean(Manifold):
         return w
 
     def inner(self, p, c, u, v=None, keepdim=False):
-        #print(u)
-        #print(v)
         if v is None:
             v = u
         return (u * v).sum(dim=-1, keepdim=keepdim)

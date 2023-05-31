@@ -74,7 +74,6 @@ class ManifoldParameter(Parameter):
         return Parameter.__new__(cls, data, requires_grad)
 
     def __init__(self, data, requires_grad, manifold, c):
-        print(data)
         self.c = c
         self.manifold = manifold
 
