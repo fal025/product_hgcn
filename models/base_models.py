@@ -27,8 +27,6 @@ class BaseModel(nn.Module):
             self.c = nn.Parameter(torch.Tensor([1.]))
         
         #####################
-        print(self.manifold_name)
-        print(manifolds)
         if self.manifold_name not in ["Spherical", "Euclidean", "PoincareBall", "Hyperboloid"]:
             manifold_array = []
             word = list(self.manifold_name)
@@ -43,16 +41,12 @@ class BaseModel(nn.Module):
                 elif word[i] == "H":
                     man_name = "Hyperboloid"
                 else:
-                    raise ValueError("Invalide string in the manifold")
+                    raise ValueError("Invalid string in the manifold")
                 count = int(word[i+1])
-                
-                
-                
-                #for j in range(count):
+
                 manifold_array.append((getattr(manifolds, man_name)(),count))
             self.manifold_name = "productManifold"
             self.manifold = getattr(manifolds, self.manifold_name)(manifold_array, args.dim)
-
                     
         else:
             self.manifold = getattr(manifolds, self.manifold_name)()
@@ -60,7 +54,6 @@ class BaseModel(nn.Module):
         self.encoder = getattr(encoders, args.model)(self.c, args)
 
     def encode(self, x, adj):
-        #print(x, adj)
         h = self.encoder.encode(x, adj)
         return h
 
@@ -129,9 +122,6 @@ class LPModel(BaseModel):
         emb_in = h[idx[:, 0], :]
         emb_out = h[idx[:, 1], :]
         sqdist = self.manifold.sqdist(emb_in, emb_out, self.c)
-        #print(sqdist)
-        #print("decode in LP")
-        #print(sqdist.sum())
         probs = self.dc.forward(sqdist)
         return probs
 
@@ -140,12 +130,9 @@ class LPModel(BaseModel):
             edges_false = data[f'{split}_edges_false'][np.random.randint(0, self.nb_false_edges, self.nb_edges)]
         else:
             edges_false = data[f'{split}_edges_false']
-        #print("compute_metrics")
         pos_scores = self.decode(embeddings, data[f'{split}_edges'])
 
-        #print(pos_scores)
         neg_scores = self.decode(embeddings, edges_false)
-        #print(neg_scores)
         loss = F.binary_cross_entropy(pos_scores, torch.ones_like(pos_scores))
         loss += F.binary_cross_entropy(neg_scores, torch.zeros_like(neg_scores))
 

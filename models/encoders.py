@@ -95,7 +95,6 @@ class HypGCN(Encoder):
 
     def __init__(self, c, args):
         super(HypGCN, self).__init__(c)
-        #print(args.manifold)
         if args.manifold not in ["Spherical", "Euclidean", "PoincareBall", "Hyperboloid"]:
             manifold_array = []
             word = list(args.manifold)
@@ -111,18 +110,13 @@ class HypGCN(Encoder):
                 else:
                     raise ValueError("Invalide string in the manifold")
                 count = int(word[i+1])
-                #for j in range(count):
                 manifold_array.append((getattr(manifolds, man_name)(),count))
-                #print("__________")
-                #print(manifold_array)
             self.manifold_name = "productManifold"
             self.manifold = getattr(manifolds, self.manifold_name)(manifold_array, args.dim)
 
                     
         else:
             self.manifold = getattr(manifolds, args.manifold)()
-
-        #self.manifold = getattr(manifolds, args.manifold)()
         
         assert args.num_layers > 1
         dims, acts, self.curvatures = hyp_layers.get_dim_act_curv(args)
@@ -141,15 +135,10 @@ class HypGCN(Encoder):
         self.encode_graph = True
 
     def encode(self, x, adj):
-        #print("encoder")
-        #print(self.manifold.proj_tan0(x, self.curvatures[0]))
-        #print("------------")
-        x_hyp = self.manifold.proj(
-                self.manifold.expmap0(self.manifold.proj_tan0(x, self.curvatures[0]), c=self.curvatures[0]),
-                c=self.curvatures[0])
-
-
-        #print(torch.isnan(x_hyp).sum())
+        x_hyp = x
+        # x_hyp = self.manifold.proj(
+        #         self.manifold.expmap0(self.manifold.proj_tan0(x, self.curvatures[0]), c=self.curvatures[0]),
+        #         c=self.curvatures[0])
         return super(HypGCN, self).encode(x_hyp, adj)
 
 
