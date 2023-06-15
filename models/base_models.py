@@ -15,7 +15,6 @@ class BaseModel(nn.Module):
     """
     Base model for graph embedding tasks.
     """
-
     def __init__(self, args):
         super(BaseModel, self).__init__()
         self.manifold_name = args.manifold
@@ -132,6 +131,7 @@ class LPModel(BaseModel):
         pos_scores = self.decode(embeddings, data[f'{split}_edges'])
 
         neg_scores = self.decode(embeddings, edges_false)
+        print(pos_scores)
         loss = F.binary_cross_entropy(pos_scores, torch.ones_like(pos_scores))
         loss += F.binary_cross_entropy(neg_scores, torch.zeros_like(neg_scores))
 
@@ -150,4 +150,3 @@ class LPModel(BaseModel):
 
     def has_improved(self, m1, m2):
         return 0.5 * (m1['roc'] + m1['ap']) < 0.5 * (m2['roc'] + m2['ap'])
-
