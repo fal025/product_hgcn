@@ -23,9 +23,6 @@ def broadcast_shapes(*shapes: Tuple[int]) -> Tuple[int]:
         result.append(dim)
     return tuple(reversed(result))
 
-def size2shape(*size: Union[Tuple[int], int]) -> Tuple[int]:
-    return make_tuple(strip_tuple(size))
-
 def _calculate_target_batch_dim(*dims: int):
     return max(dims) - 1
 
@@ -219,7 +216,7 @@ class Product(Manifold):
             weight = self.take_submanifold_value(w, i)
             randed = manifold.init_weights(weight, c)
             randed = randed.reshape((*randed.shape[:target_batch_dim], -1))
-            randn.append(proj)
+            randn.append(randed)
         return torch.cat(randn, -1)
 
     def inner(self, p, c, u, v=None, keepdim=True):
