@@ -1,149 +1,153 @@
+"""Hyperboloid manifold."""
+
 import torch
+
 from manifolds.base import Manifold
-from torch.autograd import Function
-import math
-
-import itertools
-from typing import Tuple, Any, Union
-
-torch.autograd.set_detect_anomaly(True)
-
-
-__all__ = [ "broadcast_shapes" ]
-def dot(x,y): return torch.sum(x * y, -1)
-def acosh(x):
-    return torch.log(x + (x**2-1)**0.5)
-
-def broadcast_shapes(*shapes: Tuple[int]) -> Tuple[int]:
-    """Apply numpy broadcasting rules to shapes."""
-    result = []
-    for dims in itertools.zip_longest(*map(reversed, shapes), fillvalue=1):
-        dim: int = 1
-        for d in dims:
-            if dim != 1 and d != 1 and d != dim:
-                raise ValueError("Shapes can't be broadcasted")
-            elif d > dim:
-                dim = d
-        result.append(dim)
-    return tuple(reversed(result))
+from utils.math_utils import arcosh, cosh, sinh 
 
 
 class Hyperboloid(Manifold):
     """
-    Hyperboloid Manifold class.
+    Hyperboloid manifold class.
 
-    We use the following convention: x0^2 + x1^2 + ... + xd^2 < 1 / c
+    We use the following convention: -x0^2 + x1^2 + ... + xd^2 = -K
 
-    Note that 1/sqrt(c) is the Poincare ball radius.
-
+    c = 1 / K is the hyperbolic curvature. 
     """
 
     def __init__(self):
         super(Hyperboloid, self).__init__()
         self.name = 'Hyperboloid'
+        self.eps = {torch.float32: 1e-7, torch.float64: 1e-15}
         self.min_norm = 1e-15
-        self.eps = {torch.float32: 4e-3, torch.float64: 1e-5}
+        self.max_norm = 1e6
 
-    def sqdist(self, p1, p2, c):
-        K = c
-        d = torch.sqrt(K) * acosh(torch.clamp(-self.inner(p1, c, p1, p2) / K, min =1.+1e-7))
-        return d**2
+    def minkowski_dot(self, x, y, keepdim=True):
+        res = torch.sum(x * y, dim=-1) - 2 * x[..., 0] * y[..., 0]
+        if keepdim:
+            res = res.view(res.shape + (1,))
+        return res
 
-    def egrad2rgrad(self, p, dp, c):
-        dp[...,0] *= -1
-        dp -= self.inner(p, c, p, dp) / self.inner(p, c, p) * p
-        
-        return dp
-    
+    def minkowski_norm(self, u, keepdim=True):
+        dot = self.minkowski_dot(u, u, keepdim=keepdim)
+        return torch.sqrt(torch.clamp(dot, min=self.eps[u.dtype]))
+
+    def sqdist(self, x, y, c):
+        K = 1. / c
+        prod = self.minkowski_dot(x, y)
+        theta = torch.clamp(-prod / K, min=1.0 + self.eps[x.dtype])
+        sqdist = K * arcosh(theta) ** 2
+        # clamp distance to avoid nans in Fermi-Dirac decoder
+        return torch.clamp(sqdist, max=50.0)
+
     def proj(self, x, c):
-        x_ = x.clone()
-        x_tail = x_[...,1:].clone().detach()
-        current_norms = torch.norm(x_tail,2,-1)
-        scale      = (current_norms/1e7).clamp_(min=1.0)
-        x_tail /= scale.unsqueeze(-1)
-        x_1 = torch.empty(x_.shape)
-        x_1[...,1:] = x_tail.clone().requires_grad_(True)
-        x_1[...,0] = (torch.sqrt(1 + torch.norm(x_tail,2,-1)**2)).clone().requires_grad_(True)
-        xxx = x_1 / torch.sqrt(torch.clamp(-self.inner(x_1, c,x_1,x_1), min=1e-6)).unsqueeze(-1)
-        return xxx
+        K = 1. / c
+        d = x.size(-1) - 1
+        y = x.narrow(-1, 1, d)
+        y_sqnorm = torch.norm(y, p=2, dim=1, keepdim=True) ** 2 
+        mask = torch.ones_like(x)
+        mask[:, 0] = 0
+        vals = torch.zeros_like(x)
+        vals[:, 0:1] = torch.sqrt(torch.clamp(K + y_sqnorm, min=self.eps[x.dtype]))
+        return vals + mask * x
 
-    
-    def proj_tan(self, u, p, c):
-        inner_prod = self.inner(p, c, u,p)
-        inner_prod = inner_prod[:,None].repeat(1,u.shape[-1])
-        
-        return (u + inner_prod * p).clamp(min = 1e-6)
-
+    def proj_tan(self, u, x, c):
+        K = 1. / c
+        d = x.size(1) - 1
+        ux = torch.sum(x.narrow(-1, 1, d) * u.narrow(-1, 1, d), dim=1, keepdim=True)
+        mask = torch.ones_like(u)
+        mask[:, 0] = 0
+        vals = torch.zeros_like(u)
+        vals[:, 0:1] = ux / torch.clamp(x[:, 0:1], min=self.eps[x.dtype])
+        return vals + mask * u
 
     def proj_tan0(self, u, c):
-        return self.proj_tan(u,self.proj(torch.zeros(u.shape).clamp(min = 1e-4),c),c)
+        narrowed = u.narrow(-1, 0, 1)
+        vals = torch.zeros_like(u)
+        vals[:, 0:1] = narrowed
+        return u - vals
 
-
-    def expmap(self, u, p, c):
-        K = c
-        u_norm = (self.inner(p, K, u) ** 0.5)
-        u_norm = u_norm[:, None].repeat(1,u.shape[-1])
-        exp_map = torch.cosh(u_norm / torch.sqrt(K)) * p  \
-                + torch.sqrt(K) * torch.sinh(u_norm / torch.sqrt(K)) \
-                * (u_norm ** (-1) * u  )
-        retr = self.proj(u+p,c)
-        cond = u_norm.gt(self.eps[u_norm.dtype])
-        return torch.where(cond, exp_map, retr)
-
-
-    def logmap(self, p1, p2, c):
-        K = c
-        dist = self.sqdist(p1, p2, c)
+    def expmap(self, u, x, c):
+        K = 1. / c
+        sqrtK = K ** 0.5
+        normu = self.minkowski_norm(u)
+        normu = torch.clamp(normu, max=self.max_norm)
+        theta = normu / sqrtK
+        theta = torch.clamp(theta, min=self.min_norm)
+        result = cosh(theta) * x + sinh(theta) * u / theta
+        return self.proj(result, c)
         
-        u = self.proj_tan(p2,p1,c)
-        dist = dist[:,None].repeat(1,p1.shape[-1])
-        
-        u_norm = self.inner(p1, K, u) ** 0.5
-        u_norm = u_norm[:,None].repeat(1,u.shape[-1])
-
-        cond = dist.gt(self.eps[dist.dtype])
-        return torch.where(cond, u * dist * (u_norm)**(-1), u)
+    def logmap(self, x, y, c):
+        K = 1. / c
+        xy = torch.clamp(self.minkowski_dot(x, y) + K, max=-self.eps[x.dtype]) - K
+        u = y + xy * x * c
+        normu = self.minkowski_norm(u)
+        normu = torch.clamp(normu, min=self.min_norm)
+        dist = self.sqdist(x, y, c) ** 0.5
+        result = dist * u / normu
+        return self.proj_tan(result, x, c)
 
     def expmap0(self, u, c):
-        return self.expmap(u, self.proj(torch.zeros(u.shape).clamp(min = 1e-4),c), c)
+        K = 1. / c
+        sqrtK = K ** 0.5
+        d = u.size(-1) - 1
+        x = u.narrow(-1, 1, d).view(-1, d)
+        x_norm = torch.norm(x, p=2, dim=1, keepdim=True)
+        x_norm = torch.clamp(x_norm, min=self.min_norm)
+        theta = x_norm / sqrtK
+        res = torch.ones_like(u)
+        res[:, 0:1] = sqrtK * cosh(theta)
+        res[:, 1:] = sqrtK * sinh(theta) * x / x_norm
+        return self.proj(res, c)
 
-    def logmap0(self, p, c):
-        return self.logmap(p,self.proj(torch.zeros(p.shape).clamp(min = 1e-4),c),c)
+    def logmap0(self, x, c):
+        K = 1. / c
+        sqrtK = K ** 0.5
+        d = x.size(-1) - 1
+        y = x.narrow(-1, 1, d).view(-1, d)
+        y_norm = torch.norm(y, p=2, dim=1, keepdim=True)
+        y_norm = torch.clamp(y_norm, min=self.min_norm)
+        res = torch.zeros_like(x)
+        theta = torch.clamp(x[:, 0:1] / sqrtK, min=1.0 + self.eps[x.dtype])
+        res[:, 1:] = sqrtK * arcosh(theta) * y / y_norm
+        return res
 
-    def mobius_add(self, x, y, c, dim=-1):
-        return x + y
+    def mobius_add(self, x, y, c):
+        u = self.logmap0(y, c)
+        v = self.ptransp0(x, u, c)
+        return self.expmap(v, x, c)
 
     def mobius_matvec(self, m, x, c):
-        mx = x @ m.transpose(-1, -2)
-        return mx
-
-    def init_weights(self, w, c, irange=1e-5):
-        w.data.uniform_(-irange, irange)
-        return w
-
-    def inner(self, p, c, u, v=None, keepdim=False, dim=-1):
-        if v is None:
-            v = u
-        inner = torch.sum(u * v, -1, keepdim = keepdim) - 2.*u[...,0]*v[...,0]
-        target_shape = broadcast_shapes(p.shape[:-1] + (1,) * keepdim, inner.shape)
-        return inner.expand(target_shape)
+        u = self.logmap0(x, c)
+        mu = u @ m.transpose(-1, -2)
+        return self.expmap0(mu, c)
 
     def ptransp(self, x, y, u, c):
-        ind_distsq = self.sqdist(x, y, 1)
-        return u - self.inner(None, c, self.logmap(x,y,1), u) / ind_distsq \
-            * (self.logmap(x,y,1) + self.logmap(y,x,1))
+        logxy = self.logmap(x, y, c)
+        logyx = self.logmap(y, x, c)
+        sqdist = torch.clamp(self.sqdist(x, y, c), min=self.min_norm)
+        alpha = self.minkowski_dot(logxy, u) / sqdist
+        res = u - alpha * (logxy + logyx)
+        return self.proj_tan(res, y, c)
 
+    def ptransp0(self, x, u, c):
+        K = 1. / c
+        sqrtK = K ** 0.5
+        x0 = x.narrow(-1, 0, 1)
+        d = x.size(-1) - 1
+        y = x.narrow(-1, 1, d)
+        y_norm = torch.clamp(torch.norm(y, p=2, dim=1, keepdim=True), min=self.min_norm)
+        y_normalized = y / y_norm
+        v = torch.ones_like(x)
+        v[:, 0:1] = - y_norm 
+        v[:, 1:] = (sqrtK - x0) * y_normalized
+        alpha = torch.sum(y_normalized * u[:, 1:], dim=1, keepdim=True) / sqrtK
+        res = u - alpha * v
+        return self.proj_tan(res, x, c)
 
-    def dot_h(self, x, y):
-        return torch.sum(x * y, -1) - 2*x[...,0]*y[...,0]
+    def to_poincare(self, x, c):
+        K = 1. / c
+        sqrtK = K ** 0.5
+        d = x.size(-1) - 1
+        return sqrtK * x.narrow(-1, 1, d) / (x[:, 0:1] + sqrtK)
 
-    def norm_h(self, x):
-        assert torch.all(self.dot_h(x,x) >= 0), torch.min(self.dot_h(x,x))
-        return torch.sqrt(torch.clamp(self.dot_h(x,x), min=0.0))
-    
-    def dist_h(self, x, y):
-        bad = torch.min(-self.dot_h(x,y) - 1.0)
-        if bad <= -1e-4:
-            print("bad dist", bad.item())
-	    # we're dividing by dist_h somewhere so we can't have it be 0, force dp > 1
-        return acosh(torch.clamp(-self.dot_h(x,y), min=(1.0+1e-8)))

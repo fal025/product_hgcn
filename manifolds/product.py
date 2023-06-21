@@ -1,20 +1,15 @@
-from __future__ import division
 import torch
-from torch.nn import Parameter
-import numpy as np
-from manifolds.base import Manifold
 import itertools
-from torch.autograd import Function
+
 from typing import Tuple, Any, Union
-"""
-    this class is referred from the package geoopt's product manifold with necessary 
-    modification
-"""
+from manifolds.base import Manifold
+
 def make_tuple(obj: Union[Tuple, Any]) -> Tuple:
     if not isinstance(obj, tuple):
         return (obj,)
     else:
         return obj
+
 def broadcast_shapes(*shapes: Tuple[int]) -> Tuple[int]:
     """Apply numpy broadcasting rules to shapes."""
     result = []
@@ -34,15 +29,14 @@ def size2shape(*size: Union[Tuple[int], int]) -> Tuple[int]:
 def _calculate_target_batch_dim(*dims: int):
     return max(dims) - 1
 
-class productManifold(Manifold):
+class Product(Manifold):
     """
     Abstract class to define operations on a manifold.
     """
-
     def __init__(self, manifolds, total_dim):
-        super(productManifold,self).__init__()
+        super().__init__()
         self.manifolds = [x[0] for x in manifolds]
-        self.name = "productManifold"
+        self.name = "Product"
 
         self.num_man = len(manifolds)
 
@@ -55,10 +49,15 @@ class productManifold(Manifold):
             self.slices.append(slice(pos0, pos1))
             pos0 = pos1
 
+        print('slices: ', self.slices)
+        print('ratio: ', self.total_ratio)
+        print('manifolds: ', self.manifolds)
+
     def sqdist(self, p1, p2, c):
         """Squared distance between pairs of points."""
         target_batch_dim = _calculate_target_batch_dim(p1.dim(), p2.dim())
         mini_dists2 = []
+        print(p1, p2)
         for i, manifold in enumerate(self.manifolds):
             point = self.take_submanifold_value(p1, i)
             point1 = self.take_submanifold_value(p2, i)
@@ -113,7 +112,6 @@ class productManifold(Manifold):
         res = torch.cat(projected, -1)
         return res
 
-    ##TODO: add zero funcationality to the 
     def proj_tan0(self, u, c):
         """Projects u on the tangent space of the origin."""
         target_batch_dim = _calculate_target_batch_dim(u.dim())
@@ -126,8 +124,6 @@ class productManifold(Manifold):
         res = torch.cat(projected, -1)
         res.retain_grad()
         return res
-
-
 
     def expmap(self, u, p, c):
         """Exponential map of u at point p."""
@@ -171,8 +167,6 @@ class productManifold(Manifold):
         res = torch.cat(mapped_tensors, -1)
         return res
 
-
-
     def logmap0(self, p, c):
         target_batch_dim = _calculate_target_batch_dim(p.dim())
         logmapped_tensors = []
@@ -201,43 +195,12 @@ class productManifold(Manifold):
         res = torch.cat(transported_tensors, -1)
         return res        
 
-
     def mobius_matvec(self, m, x, c):
-        """
-        target_batch_dim = _calculate_target_batch_dim(m.dim(), x.dim())
-        transported_tensors = []
-        #print("mobius_matvec")
-        #print(x.shape)
-        #print(m.shape)
-        for i, manifold in enumerate(self.manifolds):
-            #point = m
-            if m.shape[-1] == x.shape[-1]:
-                point = self.take_submanifold_value(m, i, True)
-            else: 
-                point = self.take_submanifold_value(m, i, is_matvec = True)
-                
-            
-            #print(x.shape)
-            #point1 = x
-            point1 = self.take_submanifold_value(x, i)
-            #print(point.shape)
-            #print(point1.shape)
-            mob_matvec = manifold.mobius_matvec(point, point1, c)
-            #mob_matvec.requires_grad = True
-            
-            mob_matvec = mob_matvec.reshape(
-                (*mob_matvec.shape[:target_batch_dim], -1)
-            )
-            transported_tensors.append(mob_matvec)
-        
-        res =  torch.cat(transported_tensors, -1)
-
-        #print(res.shape)
-        return res"""
         target_batch_dim = _calculate_target_batch_dim(m.dim(), x.dim())
         transported_tensors = []
         for i, manifold in enumerate(self.manifolds):
-            point = self.take_submanifold_value(m, i, is_matvec = True)
+            # point = self.take_submanifold_value(m, i, is_matvec = True)
+            point = self.take_submanifold_value(m, i)
             point1 = self.take_submanifold_value(x, i)
             mob_matvec = manifold.mobius_matvec(point, point1, c)
             mob_matvec = mob_matvec.reshape(
@@ -247,8 +210,6 @@ class productManifold(Manifold):
         
         res =  torch.cat(transported_tensors, -1)
         return res
-
-
 
     def init_weights(self, w, c, irange=1e-5):
         """Initializes random weigths on the manifold."""
@@ -260,9 +221,8 @@ class productManifold(Manifold):
             randed = randed.reshape((*randed.shape[:target_batch_dim], -1))
             randn.append(proj)
         return torch.cat(randn, -1)
-    
 
-    def inner(self, p, c, u, v=None):
+    def inner(self, p, c, u, v=None, keepdim=True):
         """Inner product for tangent vectors at point x."""
         if v is not None:
             target_batch_dim = _calculate_target_batch_dim(p.dim(), u.dim(), v.dim())
@@ -284,7 +244,6 @@ class productManifold(Manifold):
             result = torch.unsqueeze(result, -1)
         return result    
 
-
     def ptransp(self, x, y, u, c):
         target_batch_dim = _calculate_target_batch_dim(x.dim(), y.dim(), u.dim())
         transported_tensors = []
@@ -301,10 +260,33 @@ class productManifold(Manifold):
 
         res = torch.cat(transported_tensors, -1)
         return res
-
     
+    # def take_submanifold_value(self, x, i, reshape=True, is_matvec=False):
+    #     slc_length = int(x.shape[-1] / self.total_ratio)
+    #     print('slice len: ', slc_length)
+    #     if is_matvec:
+    #         slc_length_col = int(x.shape[-2] / self.total_ratio)
+    #     slc = self.slices[i]
+    #     start = slc.start * slc_length
+    #     length =  (slc.stop - slc.start) * slc_length
+    #     if x.shape[-1] - (start + slc_length)< slc_length:
+    #         length = x.shape[-1] - start
+
+    #     if is_matvec:
+    #         start_col = slc.start * slc_length_col
+    #         length_col =  (slc.stop - slc.start) * slc_length_col
+    #         if x.shape[-2] - (start_col + slc_length_col)< slc_length_col:
+    #             length_col = x.shape[-2] - start_col
+
+    #     if not is_matvec:
+    #         part = x.narrow(-1, start, length)
+    #     else:
+    #         part = torch.zeros((length_col,length)) + x[start_col:start_col+length_col, start:start+length]
+    #     return part
+
     def take_submanifold_value(
-            self, x: torch.Tensor, i: int, reshape=True, is_matvec = False    ) -> torch.Tensor:
+        self, x: torch.Tensor, i: int, reshape=True
+    ) -> torch.Tensor:
         """
         Take i'th slice of the ambient tensor and possibly reshape.
 
@@ -321,25 +303,11 @@ class productManifold(Manifold):
         -------
         torch.Tensor
         """
-        slc_length = int(x.shape[-1] / self.total_ratio)
-        if is_matvec:
-            slc_length_col = int(x.shape[-2] / self.total_ratio)
         slc = self.slices[i]
-        start = slc.start * slc_length
-        length =  (slc.stop - slc.start) * slc_length
-        if x.shape[-1] - (start + slc_length)< slc_length:
-            length = x.shape[-1] - start
-
-        if is_matvec:
-            start_col = slc.start * slc_length_col
-            length_col =  (slc.stop - slc.start) * slc_length_col
-            if x.shape[-2] - (start_col + slc_length_col)< slc_length_col:
-                length_col = x.shape[-2] - start_col
-
-        if not is_matvec:
-            part = x.narrow(-1, start, length)
-        else:
-            part = torch.zeros((length_col,length)) + x[start_col:start_col+length_col, start:start+length]
+        part = x.narrow(-1, slc.start, slc.stop - slc.start)
+        print(part.size())
+        # if reshape:
+        #     part = part.reshape((*part.shape[:-1], *self.shapes[i]))
         return part
 
 
@@ -357,44 +325,3 @@ class productManifold(Manifold):
             new_p.append(point)
         res = torch.cat(new_p, -1)
         return res
-
-            
-"""#the following has the reference: https://github.com/pymanopt/
-class ndarraySequenceMixin:
-    # The following attributes ensure that operations on sequences of
-    # np.ndarrays with scalar numpy data types such as np.float64 don't attempt
-    # to vectorize the scalar variable. Refer to
-    #
-    #     https://docs.scipy.org/doc/numpy/reference/arrays.classes.html
-    #     https://github.com/pymanopt/pymanopt/issues/49
-    #
-    # for details.
-    __array_priority__ = 1000
-    __array_ufunc__ = None  # Available since numpy 1.13
-    
-class _ProductTangentVector(list, ndarraySequenceMixin):
-    def __repr__(self):
-        repr_ = super(_ProductTangentVector, self).__repr__()
-        return "_ProductTangentVector: " + repr_
-
-    def __add__(self, other):
-        assert len(self) == len(other)
-        return _ProductTangentVector(
-            [v + other[k] for k, v in enumerate(self)])
-
-    def __sub__(self, other):
-        assert len(self) == len(other)
-        return _ProductTangentVector(
-            [v - other[k] for k, v in enumerate(self)])
-
-    def __mul__(self, other):
-        return _ProductTangentVector([other * val for val in self])
-
-    __rmul__ = __mul__
-
-    def __div__(self, other):
-        return _ProductTangentVector([val / other for val in self])
-
-    def __neg__(self):
-        return _ProductTangentVector([-val for val in self])"""
-

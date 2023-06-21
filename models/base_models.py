@@ -4,7 +4,6 @@ import torch
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
-import layers.hyp_layers as hyp_layers
 from models.decoders import model2decoder
 from layers.layers import FermiDiracDecoder
 from sklearn.metrics import roc_auc_score, average_precision_score
@@ -29,7 +28,7 @@ class BaseModel(nn.Module):
         if self.manifold_name not in ["Spherical", "Euclidean", "PoincareBall", "Hyperboloid"]:
             manifold_array = []
             word = list(self.manifold_name)
-            for i in range(0,len(word), 2):
+            for i in range(0, len(word), 2):
                 if word[i] == "E":
                     man_name = "Euclidean"
                 elif word[i] == "P":
@@ -43,7 +42,7 @@ class BaseModel(nn.Module):
                 count = int(word[i+1])
 
                 manifold_array.append((getattr(manifolds, man_name)(),count))
-            self.manifold_name = "productManifold"
+            self.manifold_name = "Product"
             self.manifold = getattr(manifolds, self.manifold_name)(manifold_array, args.dim)
                     
         else:
@@ -115,7 +114,7 @@ class LPModel(BaseModel):
         self.nb_edges = args.nb_edges
 
     def decode(self, h, idx):
-        if self.manifold_name == 'Euclidean' or self.manifold_name == "productManifold":
+        if self.manifold_name == 'Euclidean' or self.manifold_name == "Product":
             h = self.manifold.normalize(h)
         emb_in = h[idx[:, 0], :]
         emb_out = h[idx[:, 1], :]
