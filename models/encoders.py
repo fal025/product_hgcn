@@ -95,19 +95,19 @@ class HypGCN(Encoder):
             word = list(args.manifold)
             for i in range(0,len(word), 2):
                 if word[i] == "E":
-                    man_name = "Euclidean"
+                    manifold_name = "Euclidean"
                 elif word[i] == "P":
-                    man_name = "PoincareBall"
+                    manifold_name = "PoincareBall"
                 elif word[i] == "S":
-                    man_name = "Spherical"
+                    manifold_name = "Spherical"
                 elif word[i] == "H":
-                    man_name = "Hyperboloid"
+                    manifold_name = "Hyperboloid"
                 else:
                     raise ValueError("Invalid string in the manifold")
-                count = int(word[i+1])
-                manifold_array.append((getattr(manifolds, man_name)(),count))
+                count = int(word[i + 1])
+                manifold_array.append((getattr(manifolds, manifold_name)(),count))
             self.manifold_name = "Product"
-            self.manifold = getattr(manifolds, self.manifold_name)(manifold_array, args.dim)
+            self.manifold = getattr(manifolds, self.manifold_name)(manifold_array)
 
         else:
             self.manifold = getattr(manifolds, args.manifold)()

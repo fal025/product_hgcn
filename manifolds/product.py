@@ -30,7 +30,7 @@ class Product(Manifold):
     """
     Abstract class to define operations on a manifold.
     """
-    def __init__(self, manifolds, total_dim):
+    def __init__(self, manifolds):
         super().__init__()
         self.manifolds = [x[0] for x in manifolds]
         self.name = "Product"

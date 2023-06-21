@@ -15,35 +15,35 @@ class BaseModel(nn.Module):
     Base model for graph embedding tasks.
     """
     def __init__(self, args):
-        super(BaseModel, self).__init__()
+        super().__init__()
         self.manifold_name = args.manifold
         if args.c is not None:
             self.c = torch.tensor([args.c])
-            if not args.cuda == -1:
-                self.c = self.c.to(args.device)
         else:
             self.c = nn.Parameter(torch.Tensor([1.]))
+        if not args.cuda == -1:
+            self.c = self.c.to(args.device)
         
-        #####################
         if self.manifold_name not in ["Spherical", "Euclidean", "PoincareBall", "Hyperboloid"]:
             manifold_array = []
             word = list(self.manifold_name)
             for i in range(0, len(word), 2):
                 if word[i] == "E":
-                    man_name = "Euclidean"
+                    manifold_name = "Euclidean"
                 elif word[i] == "P":
-                    man_name = "PoincareBall"
+                    manifold_name = "PoincareBall"
                 elif word[i] == "S":
-                    man_name = "Spherical"
+                    manifold_name = "Spherical"
                 elif word[i] == "H":
-                    man_name = "Hyperboloid"
+                    manifold_name = "Hyperboloid"
                 else:
                     raise ValueError("Invalid string in the manifold")
-                count = int(word[i+1])
+                count = int(word[i + 1])
 
-                manifold_array.append((getattr(manifolds, man_name)(),count))
+                manifold_array.append((getattr(manifolds, manifold_name)(), count))
+            print("Manifold array: ", manifold_array)
             self.manifold_name = "Product"
-            self.manifold = getattr(manifolds, self.manifold_name)(manifold_array, args.dim)
+            self.manifold = getattr(manifolds, self.manifold_name)(manifold_array)
                     
         else:
             self.manifold = getattr(manifolds, self.manifold_name)()
@@ -68,9 +68,8 @@ class NCModel(BaseModel):
     """
     Base model for node classification task.
     """
-
     def __init__(self, args):
-        super(NCModel, self).__init__(args)
+        super().__init__(args)
         self.decoder = model2decoder[args.model](self.c, args)
         if args.n_classes > 2:
             self.f1_average = 'micro'
@@ -106,9 +105,8 @@ class LPModel(BaseModel):
     """
     Base model for link prediction task.
     """
-
     def __init__(self, args):
-        super(LPModel, self).__init__(args)
+        super().__init__(args)
         self.dc = FermiDiracDecoder(r=args.r, t=args.t)
         self.nb_false_edges = args.nb_false_edges
         self.nb_edges = args.nb_edges
@@ -127,10 +125,10 @@ class LPModel(BaseModel):
             edges_false = data[f'{split}_edges_false'][np.random.randint(0, self.nb_false_edges, self.nb_edges)]
         else:
             edges_false = data[f'{split}_edges_false']
-        pos_scores = self.decode(embeddings, data[f'{split}_edges'])
 
+        pos_scores = self.decode(embeddings, data[f'{split}_edges'])
         neg_scores = self.decode(embeddings, edges_false)
-        print(pos_scores)
+
         loss = F.binary_cross_entropy(pos_scores, torch.ones_like(pos_scores))
         loss += F.binary_cross_entropy(neg_scores, torch.zeros_like(neg_scores))
 

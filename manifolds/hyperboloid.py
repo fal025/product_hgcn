@@ -16,9 +16,12 @@ class Hyperboloid(Manifold):
     """
 
     def __init__(self):
-        super(Hyperboloid, self).__init__()
+        super().__init__()
         self.name = 'Hyperboloid'
-        self.eps = {torch.float32: 1e-7, torch.float64: 1e-15}
+        self.eps = {
+            torch.float32: 1e-7, 
+            torch.float64: 1e-15
+        }
         self.min_norm = 1e-15
         self.max_norm = 1e6
 
