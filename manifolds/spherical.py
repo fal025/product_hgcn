@@ -22,7 +22,6 @@ class Spherical(Manifold):
         self.min_norm = 1e-15
         self.eps = {torch.float32: 1e-7, torch.float64: 1e-15}
 
-
     def dist(self, x, y, c):
         return torch.arccos(torch.inner(x, y))
 
@@ -34,11 +33,7 @@ class Spherical(Manifold):
 
     def proj(self, x, c):
         return x / torch.norm(x).clamp_min(self.eps[x.dtype])
-
-    # def orthog(self, p, w):
-    #     I = torch.eye(p.size(0))
-    #     return (I - torch.dot(p, p)) @ w
-
+    
     def proju(self, x, u, c):
         u = u - (x * u).sum(dim=-1, keepdim=True) * x
         return u

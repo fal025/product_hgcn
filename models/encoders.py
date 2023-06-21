@@ -14,7 +14,6 @@ class Encoder(nn.Module):
     """
     Encoder abstract class.
     """
-
     def __init__(self, c):
         super(Encoder, self).__init__()
         self.c = c
@@ -31,7 +30,6 @@ class MLP(Encoder):
     """
     Multi-layer perceptron.
     """
-
     def __init__(self, c, args):
         super(MLP, self).__init__(c)
         assert args.num_layers > 0
@@ -49,7 +47,6 @@ class HNN(Encoder):
     """
     Hyperbolic Neural Networks.
     """
-
     def __init__(self, c, args):
         super(HNN, self).__init__(c)
         self.manifold = getattr(manifolds, args.manifold)()
@@ -74,7 +71,6 @@ class GCN(Encoder):
     """
     Graph Convolution Networks.
     """
-
     def __init__(self, c, args):
         super(GCN, self).__init__(c)
         assert args.num_layers > 0
@@ -92,7 +88,6 @@ class HypGCN(Encoder):
     """
     Hyperbolic-GCN.
     """
-
     def __init__(self, c, args):
         super(HypGCN, self).__init__(c)
         if args.manifold not in ["Spherical", "Euclidean", "PoincareBall", "Hyperboloid"]:
@@ -108,13 +103,12 @@ class HypGCN(Encoder):
                 elif word[i] == "H":
                     man_name = "Hyperboloid"
                 else:
-                    raise ValueError("Invalide string in the manifold")
+                    raise ValueError("Invalid string in the manifold")
                 count = int(word[i+1])
                 manifold_array.append((getattr(manifolds, man_name)(),count))
             self.manifold_name = "Product"
             self.manifold = getattr(manifolds, self.manifold_name)(manifold_array, args.dim)
 
-                    
         else:
             self.manifold = getattr(manifolds, args.manifold)()
         
@@ -146,7 +140,6 @@ class GAT(Encoder):
     """
     Graph Attention Networks.
     """
-
     def __init__(self, c, args):
         super(GAT, self).__init__(c)
         assert args.num_layers > 0
@@ -169,7 +162,6 @@ class Shallow(Encoder):
     Shallow Embedding method.
     Learns embeddings or loads pretrained embeddings and uses an MLP for classification.
     """
-
     def __init__(self, c, args):
         super(Shallow, self).__init__(c)
         self.manifold = getattr(manifolds, args.manifold)()
@@ -210,7 +202,6 @@ class ProdGCN(Encoder):
     """
     Product-GCN.
     """
-
     def __init__(self, c, args):
         super(ProdGCN, self).__init__(c)
         print(args.manifold)
