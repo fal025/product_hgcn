@@ -4,8 +4,6 @@ import layers.hyp_layers as hyp_layers
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-import utils.math_utils as pmath
 from layers.att_layers import GraphAttentionLayer
 from layers.layers import GraphConvolution, Linear, get_dim_act
 
@@ -19,7 +17,9 @@ class Encoder(nn.Module):
         self.c = c
 
     def encode(self, x, adj):
+        print("X: ", x)
         if self.encode_graph:
+            print('yolo')
             input = (x, adj)
             output, _ = self.layers.forward(input)
         else:
@@ -57,8 +57,9 @@ class HNN(Encoder):
             in_dim, out_dim = dims[i], dims[i + 1]
             act = acts[i]
             hnn_layers.append(
-                    hyp_layers.HNNLayer(
-                            self.manifold, in_dim, out_dim, self.c, args.dropout, act, args.bias)
+                hyp_layers.HNNLayer(
+                    self.manifold, in_dim, out_dim, self.c, args.dropout, act, args.bias
+                )
             )
         self.layers = nn.Sequential(*hnn_layers)
         self.encode_graph = False
@@ -89,7 +90,7 @@ class HypGCN(Encoder):
     Hyperbolic-GCN.
     """
     def __init__(self, c, args):
-        super(HypGCN, self).__init__(c)
+        super().__init__(c)
         if args.manifold not in ["Spherical", "Euclidean", "PoincareBall", "Hyperboloid"]:
             manifold_array = []
             word = list(args.manifold)
@@ -118,12 +119,13 @@ class HypGCN(Encoder):
         hgc_layers = []
         for i in range(len(dims) - 1):
             c_in, c_out = self.curvatures[i], self.curvatures[i + 1]
+            print('C in', c_in, 'C out', c_out)
             in_dim, out_dim = dims[i], dims[i + 1]
             act = acts[i]
             hgc_layers.append(
-                    hyp_layers.HyperbolicGraphConvolution(
-                            self.manifold, in_dim, out_dim, c_in, c_out, args.dropout, act, args.bias, args.use_att
-                    )
+                hyp_layers.HyperbolicGraphConvolution(
+                    self.manifold, in_dim, out_dim, c_in, c_out, args.dropout, act, args.bias, args.use_att
+                )
             )
         self.layers = nn.Sequential(*hgc_layers)
         self.encode_graph = True
@@ -133,7 +135,7 @@ class HypGCN(Encoder):
         # x_hyp = self.manifold.proj(
         #         self.manifold.expmap0(self.manifold.proj_tan0(x, self.curvatures[0]), c=self.curvatures[0]),
         #         c=self.curvatures[0])
-        return super(HypGCN, self).encode(x_hyp, adj)
+        return super().encode(x_hyp, adj)
 
 
 class GAT(Encoder):
@@ -216,9 +218,9 @@ class ProdGCN(Encoder):
             in_dim, out_dim = dims[i], dims[i + 1]
             act = acts[i]
             hgc_layers.append(
-                    hyp_layers.HyperbolicGraphConvolution(
-                            self.manifold, in_dim, out_dim, c_in, c_out, args.dropout, act, args.bias, args.use_att
-                    )
+                hyp_layers.HyperbolicGraphConvolution(
+                    self.manifold, in_dim, out_dim, c_in, c_out, args.dropout, act, args.bias, args.use_att
+                )
             )
         self.layers = nn.Sequential(*hgc_layers)
         self.encode_graph = True

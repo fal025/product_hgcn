@@ -1,16 +1,17 @@
 from __future__ import division
 from __future__ import print_function
 
-import datetime
-import json
-import logging
 import os
-import pickle
+import json
 import time
+import pickle
+import logging
+import datetime
 
-import numpy as np
-import optimizers
 import torch
+import optimizers
+import numpy as np
+
 from config import parser
 from models.base_models import NCModel, LPModel
 from utils.data_utils import load_data

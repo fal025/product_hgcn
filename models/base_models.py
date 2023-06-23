@@ -41,7 +41,7 @@ class BaseModel(nn.Module):
                 count = int(word[i + 1])
 
                 manifold_array.append((getattr(manifolds, manifold_name)(), count))
-            print("Manifold array: ", manifold_array)
+
             self.manifold_name = "Product"
             self.manifold = getattr(manifolds, self.manifold_name)(manifold_array)
                     
