@@ -33,7 +33,7 @@ class Spherical(Manifold):
 
     def proj(self, x, c):
         return x / torch.norm(x).clamp_min(self.eps[x.dtype])
-    
+
     def proju(self, x, u, c):
         u = u - (x * u).sum(dim=-1, keepdim=True) * x
         return u

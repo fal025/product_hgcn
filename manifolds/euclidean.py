@@ -5,7 +5,6 @@ class Euclidean(Manifold):
     """
     Euclidean Manifold class.
     """
-
     def __init__(self):
         super(Euclidean, self).__init__()
         self.name = 'Euclidean'

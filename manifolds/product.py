@@ -28,27 +28,26 @@ def _calculate_target_batch_dim(*dims: int):
 
 class Product(Manifold):
     """
-    Abstract class to define operations on a manifold.
+    A product manifold, made up of 
+    Spherical, Hyperbolic, and Euclidean 
+    components.
     """
     def __init__(self, manifolds):
         super().__init__()
+        # self.manifolds = manifolds
         self.manifolds = [x[0] for x in manifolds]
         self.name = "Product"
 
-        self.num_man = len(manifolds)
+        self.n_manifolds = len(manifolds)
 
+        start = 0
         self.slices = []
-        self.total_ratio = 0
-        pos0 = 0
-        for i, manifold in enumerate(manifolds):
-            pos1 = pos0 + manifold[1]
-            self.total_ratio += manifold[1]
-            self.slices.append(slice(pos0, pos1))
-            pos0 = pos1
-
-        print('slices: ', self.slices)
-        print('ratio: ', self.total_ratio)
-        print('manifolds: ', self.manifolds)
+        self.num_spaces = 0
+        for manifold, count in manifolds:
+            end = start + count
+            self.num_spaces += count
+            self.slices.append(slice(start, end))
+            start = end
 
     def sqdist(self, p1, p2, c):
         """Squared distance between pairs of points."""
@@ -199,6 +198,8 @@ class Product(Manifold):
             # point = self.take_submanifold_value(m, i, is_matvec = True)
             point = self.take_submanifold_value(m, i)
             point1 = self.take_submanifold_value(x, i)
+            print('point', point.size())
+            print('point1', point1.size())
             mob_matvec = manifold.mobius_matvec(point, point1, c)
             mob_matvec = mob_matvec.reshape(
                 (*mob_matvec.shape[:target_batch_dim], -1)
@@ -258,54 +259,53 @@ class Product(Manifold):
         res = torch.cat(transported_tensors, -1)
         return res
     
-    # def take_submanifold_value(self, x, i, reshape=True, is_matvec=False):
-    #     slc_length = int(x.shape[-1] / self.total_ratio)
-    #     print('slice len: ', slc_length)
-    #     if is_matvec:
-    #         slc_length_col = int(x.shape[-2] / self.total_ratio)
-    #     slc = self.slices[i]
-    #     start = slc.start * slc_length
-    #     length =  (slc.stop - slc.start) * slc_length
-    #     if x.shape[-1] - (start + slc_length)< slc_length:
-    #         length = x.shape[-1] - start
-
-    #     if is_matvec:
-    #         start_col = slc.start * slc_length_col
-    #         length_col =  (slc.stop - slc.start) * slc_length_col
-    #         if x.shape[-2] - (start_col + slc_length_col)< slc_length_col:
-    #             length_col = x.shape[-2] - start_col
-
-    #     if not is_matvec:
-    #         part = x.narrow(-1, start, length)
-    #     else:
-    #         part = torch.zeros((length_col,length)) + x[start_col:start_col+length_col, start:start+length]
-    #     return part
-
-    def take_submanifold_value(
-        self, x: torch.Tensor, i: int, reshape=True
-    ) -> torch.Tensor:
-        """
-        Take i'th slice of the ambient tensor and possibly reshape.
-
-        Parameters
-        ----------
-        x : tensor
-            Ambient tensor
-        i : int
-            submanifold index
-        reshape : bool
-            reshape the slice?
-
-        Returns
-        -------
-        torch.Tensor
-        """
+    def take_submanifold_value(self, x, i, reshape=True, is_matvec=False):
+        slc_length = int(x.size(-1) / self.num_spaces)
+        if is_matvec:
+            slc_length_col = int(x.size(-2) / self.num_spaces)
         slc = self.slices[i]
-        part = x.narrow(-1, slc.start, slc.stop - slc.start)
-        print(part.size())
-        # if reshape:
-        #     part = part.reshape((*part.shape[:-1], *self.shapes[i]))
+        start = slc.start * slc_length
+        length =  (slc.stop - slc.start) * slc_length
+        if x.size(-1) - (start + slc_length) < slc_length:
+            length = x.size(-1) - start
+
+        if is_matvec:
+            start_col = slc.start * slc_length_col
+            length_col =  (slc.stop - slc.start) * slc_length_col
+            if x.shape(-2) - (start_col + slc_length_col)< slc_length_col:
+                length_col = x.shape(-2) - start_col
+
+        if not is_matvec:
+            part = x.narrow(-1, start, length)
+        else:
+            part = torch.zeros((length_col,length)) + x[start_col:start_col+length_col, start:start+length]
         return part
+
+    # def take_submanifold_value(
+    #     self, x: torch.Tensor, i: int, reshape=True
+    # ) -> torch.Tensor:
+    #     """
+    #     Take i'th slice of the ambient tensor and possibly reshape.
+
+    #     Parameters
+    #     ----------
+    #     x : tensor
+    #         Ambient tensor
+    #     i : int
+    #         submanifold index
+    #     reshape : bool
+    #         reshape the slice?
+
+    #     Returns
+    #     -------
+    #     torch.Tensor
+    #     """
+    #     slc = self.slices[i]
+    #     part = x.narrow(-1, slc.start, slc.stop - slc.start)
+    #     # if reshape:
+    #     #     part = part.reshape((*part.shape[:-1], *self.shapes[i]))
+    #     print('part', part.size())
+    #     return part
 
 
     def normalize(self, p):
