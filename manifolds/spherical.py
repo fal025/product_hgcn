@@ -27,7 +27,7 @@ class Spherical(Manifold):
         return torch.tensordot(u, v, dims=u.dim())
 
     def dist(self, x, y, c):
-        return torch.arccos(torch.inner(x, y))
+        return torch.arccos(self.inner_product(x, y))
 
     def sqdist(self, x, y, c):
         return self.dist(x, y, c) ** 2
@@ -39,14 +39,7 @@ class Spherical(Manifold):
         return x / torch.norm(x).clamp_min(self.eps[x.dtype])
 
     def proju(self, x, u, c):
-        u = u - (x * u).sum(dim=-1, keepdim=True) * x
-        return u
-
-    def proj_tan(self, u, p, c):
-        return u
-
-    def proj_tan0(self, u, c):
-        return u
+        return u - self.inner_product(x, u) * x
 
     def expmap(self, v, p, c):
         v_norm = abs(c) * v.norm(dim=-1, keepdim=True).clamp_min(self.eps[v.dtype])
@@ -54,21 +47,11 @@ class Spherical(Manifold):
         return exp
 
     def logmap(self, x, y, c):
-        # res = torch.empty_like(p, dtype=p.dtype)
-        # for x, y in zip(p, q):
-        #     dist = self.dist(x, y, c)
-        #     num = self.proju(x, y - x, c)
-        #     cond = dist.gt(self.eps[x.dtype])
-        #     val = dist *  num / torch.norm(num, dim=-1, keepdim=True).clamp_min(self.eps[x.dtype])
-        #     filt = torch.where(cond, val, num)
-        #     torch.cat((res, filt.unsqueeze(0)), dim=0)
-        # return res
-        theta = torch.dot(p, q)
-        dist = torch.diag(self.dist(p, q, c))
-        num = q - (torch.diag(p @ q.T) * p.T).T
-        denom = torch.linalg.norm(num)
-        
-        return (dist * num.T).T / denom
+        v = self.proju(x, y - x, c)
+        dist = self.dist(x, y, c)
+        eps = self.eps[x.dtype]
+        scale = (dist + eps) / (torch.linalg.norm(v) + eps)
+        return scale * v
 
     def expmap0(self, u, c):
         orig = torch.zeros(u.size())
