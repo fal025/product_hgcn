@@ -85,7 +85,7 @@ class Spherical(Manifold):
         return inner.expand(target_shape)
 
     def ptransp(self, x, y, u, c):
-        denom = self.sqdist(x, y, c)
-        num = self.logmap(x, y, c) @ u
-        term = self.logmap(x, y, c) + self.logmap(y, x, c)
-        return u - (num / denom) * term
+        m = x + y
+        m_norm = self.inner_product(m, m)
+        factor = 2 * self.inner_product(u, y) / m_norm
+        return u - m * factor
