@@ -1,6 +1,5 @@
-import itertools
-import math
 import torch
+import itertools
 
 from manifolds.base import Manifold
 
