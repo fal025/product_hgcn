@@ -1,4 +1,5 @@
 import itertools
+import math
 import torch
 
 from manifolds.base import Manifold
@@ -16,11 +17,14 @@ def broadcast_shapes(*shapes):
     return tuple(reversed(result))
 
 class Spherical(Manifold):
-    def __init__(self, ):
-        super(Spherical, self).__init__()
+    def __init__(self):
+        super().__init__()
         self.name = 'Spherical'
         self.min_norm = 1e-15
         self.eps = {torch.float32: 1e-7, torch.float64: 1e-15}
+
+    def inner_product(self, u, v):
+        return torch.tensordot(u, v, dims=u.dim())
 
     def dist(self, x, y, c):
         return torch.arccos(torch.inner(x, y))
@@ -44,23 +48,27 @@ class Spherical(Manifold):
     def proj_tan0(self, u, c):
         return u
 
-    def expmap(self, u, p, c):
-        u_norm = u.norm(dim=-1, keepdim=True).clamp_min(self.eps[u.dtype])
-        exp = p * torch.cos(u_norm) + u * torch.sin(u_norm) / u_norm
-        retr = self.proj(p + u, c)
-        cond = u_norm > self.eps[u_norm.dtype]
-        return torch.where(cond, exp, retr)
+    def expmap(self, v, p, c):
+        v_norm = abs(c) * v.norm(dim=-1, keepdim=True).clamp_min(self.eps[v.dtype])
+        exp = p * torch.cos(v_norm) + v * c * torch.sinc(v_norm / torch.pi)
+        return exp
 
-    def logmap(self, p, q, c):
-        res = torch.empty_like(p)
-        for x, y in zip(p, q):
-            dist = self.dist(x, y, c)
-            num = self.proju(x, y - x, c)
-            cond = dist.gt(self.eps[x.dtype])
-            val = dist *  num / torch.norm(num, dim=-1, keepdim=True).clamp_min(self.eps[x.dtype])
-            filt = torch.where(cond, val, num)
-            torch.cat((res, filt.unsqueeze(0)), dim=0)
-        return res
+    def logmap(self, x, y, c):
+        # res = torch.empty_like(p, dtype=p.dtype)
+        # for x, y in zip(p, q):
+        #     dist = self.dist(x, y, c)
+        #     num = self.proju(x, y - x, c)
+        #     cond = dist.gt(self.eps[x.dtype])
+        #     val = dist *  num / torch.norm(num, dim=-1, keepdim=True).clamp_min(self.eps[x.dtype])
+        #     filt = torch.where(cond, val, num)
+        #     torch.cat((res, filt.unsqueeze(0)), dim=0)
+        # return res
+        theta = torch.dot(p, q)
+        dist = torch.diag(self.dist(p, q, c))
+        num = q - (torch.diag(p @ q.T) * p.T).T
+        denom = torch.linalg.norm(num)
+        
+        return (dist * num.T).T / denom
 
     def expmap0(self, u, c):
         orig = torch.zeros(u.size())
@@ -68,16 +76,19 @@ class Spherical(Manifold):
         return self.expmap(u, orig, c)
 
     def logmap0(self, p, c):
-        orig = torch.zeros(p.size())
+        orig = torch.zeros(p.size(), dtype=p.dtype)
         orig[-1] = 1
         return self.logmap(p, orig, c)
 
     def mobius_add(self, x, y, c, dim=-1):
-        return x + y
+        u = self.logmap0(y, c)
+        v = self.ptransp0(x, u, c)
+        return self.expmap(v, x, c)
 
     def mobius_matvec(self, m, x, c):
-        mx = x @ m.transpose(-1, -2)
-        return mx
+        u = self.logmap0(x, c)
+        mu = u @ m.transpose(-1, -2)
+        return self.expmap0(mu, c)
 
     def init_weights(self, w, c, irange=1e-5):
         w.data.uniform_(-irange, irange)
