@@ -1,7 +1,7 @@
 import torch
 import itertools
 
-from manifolds.base import Manifold
+from base import Manifold
 
 def broadcast_shapes(*shapes):
     result = []
@@ -60,7 +60,7 @@ class Spherical(Manifold):
     def logmap0(self, p, c):
         orig = torch.zeros(p.size(), dtype=p.dtype)
         orig[-1] = 1
-        return self.logmap(p, orig, c)
+        return self.logmap(orig, p, c)
 
     def mobius_add(self, x, y, c, dim=-1):
         u = self.logmap0(y, c)
@@ -69,7 +69,7 @@ class Spherical(Manifold):
 
     def mobius_matvec(self, m, x, c):
         u = self.logmap0(x, c)
-        mu = u @ m.transpose(-1, -2)
+        mu = u @ m
         return self.expmap0(mu, c)
 
     def init_weights(self, w, c, irange=1e-5):
@@ -88,3 +88,5 @@ class Spherical(Manifold):
         m_norm = self.inner_product(m, m)
         factor = 2 * self.inner_product(u, y) / m_norm
         return u - m * factor
+
+    # x2[2] = -torch.inner(x2[:2], s[:2]) / s[2]
