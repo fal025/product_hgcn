@@ -5,7 +5,6 @@ import torch
 from manifolds.base import Manifold
 from utils.math_utils import arcosh, cosh, sinh 
 
-
 class Hyperboloid(Manifold):
     """
     Hyperboloid manifold class.
@@ -18,10 +17,7 @@ class Hyperboloid(Manifold):
     def __init__(self):
         super().__init__()
         self.name = 'Hyperboloid'
-        self.eps = {
-            torch.float32: 1e-7, 
-            torch.float64: 1e-15
-        }
+        self.eps = {torch.float32: 1e-7, torch.float64: 1e-15}
         self.min_norm = 1e-15
         self.max_norm = 1e6
 
@@ -104,27 +100,16 @@ class Hyperboloid(Manifold):
         return self.proj(res, c)
 
     def logmap0(self, x, c):
-        x = x.resize(x.size(0), x.size(-1))
-        orig = torch.zeros(x.size())
-        orig[0] = 1.
-        # K = 1. / c
-        # sqrtK = K ** 0.5
-        # d = x.size(-1) - 1
-        # x = x.unsqueeze(1)
-        # print('x', x.size())
-        # print(x.narrow(-1, 1, d).size())
-        # y = x.narrow(-1, 1, d)
-        # # y = x.view(-1, d)
-        # y_norm = torch.norm(y, p=2, dim=1, keepdim=True)
-        # y_norm = torch.clamp(y_norm, min=self.min_norm)
-        # res = torch.zeros_like(x)
-        # theta = torch.clamp(x[:, 0:1] / sqrtK, min=1.0 + self.eps[x.dtype])
-        # print('theta', theta.size())
-        # print('y', y.size())
-        # print('y_norm', y_norm.size())
-        # res[:, 1:] = sqrtK * arcosh(theta) * y / y_norm
-        # return res
-        return self.logmap(orig, x, c)
+        K = 1. / c
+        sqrtK = K ** 0.5
+        d = x.size(-1) - 1
+        y = x.narrow(-1, 1, d).view(-1, d)
+        y_norm = torch.norm(y, p=2, dim=1, keepdim=True)
+        y_norm = torch.clamp(y_norm, min=self.min_norm)
+        res = torch.zeros_like(x)
+        theta = torch.clamp(x[:, 0:1] / sqrtK, min=1.0 + self.eps[x.dtype])
+        res[:, 1:] = sqrtK * arcosh(theta) * y / y_norm
+        return res
 
     def mobius_add(self, x, y, c):
         u = self.logmap0(y, c)
