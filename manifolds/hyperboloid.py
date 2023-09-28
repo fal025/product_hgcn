@@ -1,5 +1,3 @@
-"""Hyperboloid manifold."""
-
 import torch
 
 from manifolds.base import Manifold
@@ -13,7 +11,6 @@ class Hyperboloid(Manifold):
 
     c = 1 / K is the hyperbolic curvature. 
     """
-
     def __init__(self):
         super().__init__()
         self.name = 'Hyperboloid'
