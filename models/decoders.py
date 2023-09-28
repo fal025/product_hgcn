@@ -89,10 +89,7 @@ class LinearDecoder(Decoder):
         self.decode_adj = False
 
     def decode(self, x, adj):
-        #print("decoder")
-        #print(x)
         h = self.manifold.proj_tan0(self.manifold.logmap0(x, c=self.c), c=self.c)
-        #print(torch.isnan(h).sum())
         return super(LinearDecoder, self).decode(h, adj)
 
     def extra_repr(self):
