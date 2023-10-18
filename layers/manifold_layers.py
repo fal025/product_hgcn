@@ -1,10 +1,10 @@
-"""Hyperbolic layers."""
+"""Manifold layers."""
 import math
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.nn.init as init
+import torch.nn.functional as F
 from torch.nn.modules.module import Module
 
 from layers.att_layers import DenseAtt
@@ -39,15 +39,15 @@ def get_dim_act_curv(args):
     return dims, acts, curvatures
 
 
-class HNNLayer(nn.Module):
-    """
-    Hyperbolic neural networks layer.
-    """
 
+class ManifoldNNLayer(nn.Module):
+    """
+    Manifold neural networks layer.
+    """
     def __init__(self, manifold, in_features, out_features, c, dropout, act, use_bias):
-        super(HNNLayer, self).__init__()
-        self.linear = HypLinear(manifold, in_features, out_features, c, dropout, use_bias)
-        self.hyp_act = HypAct(manifold, c, c, act)
+        super().__init__()
+        self.linear = ManifoldLinear(manifold, in_features, out_features, c, dropout, use_bias)
+        self.hyp_act = ManifoldAct(manifold, c, c, act)
 
     def forward(self, x):
         h = self.linear.forward(x)
@@ -55,14 +55,14 @@ class HNNLayer(nn.Module):
         return h
 
 
-class HyperbolicGraphConvolution(nn.Module):
+class ManifoldGraphConvolution(nn.Module):
     """
-    Hyperbolic graph convolution layer.
+    Manifold graph convolution layer.
     """
-    def __init__(self, manifold, in_features, out_features, c_in, c_out, dropout, act, use_bias, use_att, local_agg):
-        super(HyperbolicGraphConvolution, self).__init__()
+    def __init__(self, manifold, in_features, out_features, c_in, c_out, dropout, act, use_bias, use_att):
+        super(ManifoldGraphConvolution, self).__init__()
         self.linear = HypLinear(manifold, in_features, out_features, c_in, dropout, use_bias)
-        self.agg = HypAgg(manifold, c_in, out_features, dropout, use_att, local_agg)
+        self.agg = HypAgg(manifold, c_in, use_att, out_features, dropout)
         self.hyp_act = HypAct(manifold, c_in, c_out, act)
 
     def forward(self, input):
@@ -74,12 +74,12 @@ class HyperbolicGraphConvolution(nn.Module):
         return output
 
 
-class HypLinear(nn.Module):
+class ManifoldLinear(nn.Module):
     """
-    Hyperbolic linear layer.
+    Manifold linear layer.
     """
     def __init__(self, manifold, in_features, out_features, c, dropout, use_bias):
-        super(HypLinear, self).__init__()
+        super().__init__()
         self.manifold = manifold
         self.in_features = in_features
         self.out_features = out_features
@@ -98,69 +98,55 @@ class HypLinear(nn.Module):
         drop_weight = F.dropout(self.weight, self.dropout, training=self.training)
         mv = self.manifold.mobius_matvec(drop_weight, x, self.c)
         res = self.manifold.proj(mv, self.c)
-        if self.use_bias:
-            bias = self.manifold.proj_tan0(self.bias.view(1, -1), self.c)
+        if self.use_bias: 
+            bias = self.manifold.proj_tan0(self.bias, self.c)
             hyp_bias = self.manifold.expmap0(bias, self.c)
             hyp_bias = self.manifold.proj(hyp_bias, self.c)
             res = self.manifold.mobius_add(res, hyp_bias, c=self.c)
             res = self.manifold.proj(res, self.c)
         return res
-
+        
     def extra_repr(self):
         return 'in_features={}, out_features={}, c={}'.format(
             self.in_features, self.out_features, self.c
         )
 
 
-class HypAgg(Module):
+class ManifoldAgg(Module):
     """
     Hyperbolic aggregation layer.
     """
-
-    def __init__(self, manifold, c, in_features, dropout, use_att, local_agg):
-        super(HypAgg, self).__init__()
+    def __init__(self, manifold, c, use_att, in_features, dropout):
+        super().__init__()
         self.manifold = manifold
         self.c = c
+        self.use_att = use_att
 
         self.in_features = in_features
         self.dropout = dropout
-        self.local_agg = local_agg
-        self.use_att = use_att
-        if self.use_att:
-            self.att = DenseAtt(in_features, dropout)
+        if use_att:
+            self.att = DenseAtt(in_features, dropout, lambda x: x)
 
     def forward(self, x, adj):
         x_tangent = self.manifold.logmap0(x, c=self.c)
         if self.use_att:
-            if self.local_agg:
-                x_local_tangent = []
-                for i in range(x.size(0)):
-                    x_local_tangent.append(self.manifold.logmap(x[i], x, c=self.c))
-                x_local_tangent = torch.stack(x_local_tangent, dim=0)
-                adj_att = self.att(x_tangent, adj)
-                att_rep = adj_att.unsqueeze(-1) * x_local_tangent
-                support_t = torch.sum(adj_att.unsqueeze(-1) * x_local_tangent, dim=1)
-                output = self.manifold.proj(self.manifold.expmap(x, support_t, c=self.c), c=self.c)
-                return output
-            else:
-                adj_att = self.att(x_tangent, adj)
-                support_t = torch.matmul(adj_att, x_tangent)
-        else:
-            support_t = torch.spmm(adj, x_tangent)
+            adj = self.att(x_tangent, adj)
+        support_t = torch.spmm(adj, x_tangent)
         output = self.manifold.proj(self.manifold.expmap0(support_t, c=self.c), c=self.c)
         return output
 
     def extra_repr(self):
-        return 'c={}'.format(self.c)
+        return 'c={}, use_att={}'.format(
+            self.c, self.use_att
+        )
 
 
-class HypAct(Module):
+class ManifoldAct(Module):
     """
     Hyperbolic activation layer.
     """
-
     def __init__(self, manifold, c_in, c_out, act):
-        super(HypAct, self).__init__()
+        super().__init__()
         self.manifold = manifold
         self.c_in = c_in
         self.c_out = c_out
@@ -169,21 +155,10 @@ class HypAct(Module):
     def forward(self, x):
         xt = self.act(self.manifold.logmap0(x, c=self.c_in))
         xt = self.manifold.proj_tan0(xt, c=self.c_out)
-        return self.manifold.proj(self.manifold.expmap0(xt, c=self.c_out), c=self.c_out)
+        exp = self.manifold.expmap0(xt, c=self.c_out)
+        return self.manifold.proj(exp, c=self.c_out)
 
     def extra_repr(self):
         return 'c_in={}, c_out={}'.format(
             self.c_in, self.c_out
         )
-
-def attention(query, key, value, mask=None, dropout=None):
-    "Compute 'Scaled Dot Product Attention'"
-    d_k = query.size(-1)
-    scores = torch.matmul(query, key.transpose(-2, -1)) \
-             / math.sqrt(d_k)
-    if mask is not None:
-        scores = scores.masked_fill(mask == 0, -1e9)
-    p_attn = F.softmax(scores, dim = -1)
-    if dropout is not None:
-        p_attn = dropout(p_attn)
-    return torch.matmul(p_attn, value), p_attn

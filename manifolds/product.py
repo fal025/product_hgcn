@@ -47,8 +47,8 @@ class Product(Manifold):
         self.indices = []
         if first_iter is False:
             indiv_dim = total_dim // len(self.manifolds)
-            print(indiv_dim)
             total = 0
+            print(indiv_dim)
             for i, man in enumerate(self.manifolds):
                 self.indices.append((i * indiv_dim, (i + 1) * indiv_dim))
 
@@ -69,12 +69,13 @@ class Product(Manifold):
 
     def sqdist(self, p1, p2, c):
         """Squared distance between pairs of points."""
+        self.calc_indices(self.man_count, p1.size(1), first_iter=True)
         splits = self.split_input(p1, p2)
-        res = torch.empty(100)
-        for i, (split, man) in enumerate(zip(splits, self.manifolds)):
-            start, end = self.indices[i]
-            res[start:end] = man.sqdist(*split, c)
-        return res
+        res = []
+        for i, man in enumerate(self.manifolds):
+            split = tuple([x[i] for x in splits])
+            res.append(man.sqdist(*split, c))
+        return torch.cat(res, dim=1)
 
     def egrad2rgrad(self, p, dp, c):
         """Converts Euclidean Gradient to Riemannian Gradients."""
@@ -98,15 +99,14 @@ class Product(Manifold):
     def proj_tan(self, u, p, c):
         """Projects u on the tangent space of p."""
         splits = self.split_input(u, p)
-        res = torch.empty(100)
-        for i, (split, man) in enumerate(zip(splits, self.manifolds)):
-            start, end = self.indices[i]
-            res[start:end] = man.proj_tan(*split, c)
-        return res
+        res = []
+        for i, man in enumerate(self.manifolds):
+            split = tuple([x[i] for x in splits])
+            res.append(man.proj_tan(*split, c))
+        return torch.cat(res, dim=1)
 
     def proj_tan0(self, u, c):
         """Projects u on the tangent space of the origin."""
-        self.calc_indices(self.man_count, u.size(1), first_iter=False)
         splits = self.split_input(u)
         res = []
         for i, man in enumerate(self.manifolds):
@@ -184,8 +184,6 @@ class Product(Manifold):
             start, end = self.indices[i]
             res[start:end] = man.inner(*split, c)
         return res
-
-
 
     def ptransp(self, x, y, u, c):
         splits = self.split_input(x, y, u)
