@@ -43,6 +43,7 @@ class BaseModel(nn.Module):
                 manifold_array.append((getattr(manifolds, manifold_name)(), count))
 
             self.manifold_name = "Product"
+            # self.manifold = manifold_array
             self.manifold = getattr(manifolds, self.manifold_name)(manifold_array)
                     
         else:
@@ -112,10 +113,12 @@ class LPModel(BaseModel):
         self.nb_edges = args.nb_edges
 
     def decode(self, h, idx):
-        if self.manifold_name == 'Euclidean' or self.manifold_name == "Product":
-            h = self.manifold.normalize(h)
+        # if self.manifold_name == 'Euclidean' or self.manifold_name == "Product":
+        #     h = self.manifold.normalize(h)
         emb_in = h[idx[:, 0], :]
         emb_out = h[idx[:, 1], :]
+        print(emb_in)
+        print(emb_out)
         sqdist = self.manifold.sqdist(emb_in, emb_out, self.c)
         probs = self.dc.forward(sqdist)
         return probs

@@ -106,7 +106,28 @@ class HGCN(Encoder):
 
     def __init__(self, c, args):
         super(HGCN, self).__init__(c)
-        self.manifold = getattr(manifolds, args.manifold)()
+        if args.manifold not in ["Spherical", "Euclidean", "PoincareBall", "Hyperboloid"]:
+            manifold_array = []
+            word = list(args.manifold)
+            for i in range(0,len(word), 2):
+                if word[i] == "E":
+                    man_name = "Euclidean"
+                elif word[i] == "P":
+                    man_name = "PoincareBall"
+                elif word[i] == "S":
+                    man_name = "Spherical"
+                elif word[i] == "H":
+                    man_name = "Hyperboloid"
+                else:
+                    raise ValueError(f"Invalid manifold name: {args.manifold}.")
+                count = int(word[i+1])
+                manifold_array.append((getattr(manifolds, man_name)(), count))
+            self.manifold_name = "Product"
+            print(manifold_array)
+            self.manifold = getattr(manifolds, self.manifold_name)(manifold_array)
+        else:
+            self.manifold = getattr(manifolds, args.manifold)()
+
         assert args.num_layers > 1
         dims, acts, self.curvatures = hyp_layers.get_dim_act_curv(args)
         self.curvatures.append(self.c)
@@ -117,7 +138,7 @@ class HGCN(Encoder):
             act = acts[i]
             hgc_layers.append(
                     hyp_layers.HyperbolicGraphConvolution(
-                            self.manifold, in_dim, out_dim, c_in, c_out, args.dropout, act, args.bias, args.use_att, args.local_agg
+                            self.manifold, in_dim, out_dim, c_in, c_out, args.dropout, act, args.bias, args.use_att, False
                     )
             )
         self.layers = nn.Sequential(*hgc_layers)
@@ -132,9 +153,10 @@ class HGCN(Encoder):
         return x_norm
 
     def encode(self, x, adj):
-        x_tan = self.manifold.proj_tan0(x, self.curvatures[0])
-        x_hyp = self.manifold.expmap0(x_tan, c=self.curvatures[0])
-        x_hyp = self.manifold.proj(x_hyp, c=self.curvatures[0])
+        # x_tan = self.manifold.proj_tan0(x, self.curvatures[0])
+        # x_hyp = self.manifold.expmap0(x_tan, c=self.curvatures[0])
+        # x_hyp = self.manifold.proj(x_hyp, c=self.curvatures[0])
+        x_hyp = x
         return super(HGCN, self).encode(x_hyp, adj)
 
 
