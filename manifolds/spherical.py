@@ -89,4 +89,15 @@ class Spherical(Manifold):
         factor = 2 * self.inner_product(u, y) / m_norm
         return u - m * factor
 
+    def proj_tan(self, u, x, c):
+        x = x.clone()
+        x[:, -1] = torch.diag(x[:, :-1] @ u[:, :-1].T) / u[:, -1]
+        return x
+
+    def proj_tan0(self, x, c):
+        orig = torch.zeros(x.size(), dtype=x.dtype)
+        orig[-1] = 1
+        return self.proj_tan(orig, x, c)
+
+
     # x2[2] = -torch.inner(x2[:2], s[:2]) / s[2]
