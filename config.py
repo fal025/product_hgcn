@@ -42,7 +42,8 @@ config_args = {
         'n-heads': (4, 'number of attention heads for graph attention networks, must be a divisor dim'),
         'alpha': (0.2, 'alpha for leakyrelu in graph attention networks'),
         'use-att': (0, 'whether to use hyperbolic attention in HyperGCN model'),
-        'double-precision': ('0', 'whether to use double precision')
+        'double-precision': ('0', 'whether to use double precision'),
+        'total_dim': (100, 'total space dimensionality')
     },
     'data_config': {
         'dataset': ('cora', 'which dataset to use'),

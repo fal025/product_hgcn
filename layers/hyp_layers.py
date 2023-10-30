@@ -104,6 +104,7 @@ class HypLinear(nn.Module):
             hyp_bias = self.manifold.proj(hyp_bias, self.c)
             res = self.manifold.mobius_add(res, hyp_bias, c=self.c)
             res = self.manifold.proj(res, self.c)
+        # print(f"res: {res}")
         return res
 
     def extra_repr(self):
@@ -148,6 +149,7 @@ class HypAgg(Module):
         else:
             support_t = torch.spmm(adj, x_tangent)
         output = self.manifold.proj(self.manifold.expmap0(support_t, c=self.c), c=self.c)
+        # print(f"output: {output}")
         return output
 
     def extra_repr(self):
@@ -169,7 +171,9 @@ class HypAct(Module):
     def forward(self, x):
         xt = self.act(self.manifold.logmap0(x, c=self.c_in))
         xt = self.manifold.proj_tan0(xt, c=self.c_out)
-        return self.manifold.proj(self.manifold.expmap0(xt, c=self.c_out), c=self.c_out)
+        act = self.manifold.proj(self.manifold.expmap0(xt, c=self.c_out), c=self.c_out)
+        # print(f"act: {act}")
+        return act
 
     def extra_repr(self):
         return 'c_in={}, c_out={}'.format(

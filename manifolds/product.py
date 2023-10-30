@@ -73,7 +73,6 @@ class Product(Manifold):
             split.append(man_split)
         return split
 
-
     def sqdist(self, p1, p2, c):
         """Squared distance between pairs of points."""
         self.calc_indices(self.man_count, p1.size(1), first_iter=True)
@@ -83,9 +82,11 @@ class Product(Manifold):
             man_split = splits[i]
             for s in man_split:
                 res.append(man.sqdist(*s, c))
-        print(len(res))
-        for x in res:
-            print(x.size())
+        for i, x in enumerate(res):
+            if x.dim() != 1:
+                res[i] = x.squeeze()
+            # print(res[i].size())
+            # print(res[i])
         return torch.cat(res, dim=0)
 
     def egrad2rgrad(self, p, dp, c):
