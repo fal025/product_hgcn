@@ -16,14 +16,13 @@ class Encoder(nn.Module):
     """
     Encoder abstract class.
     """
-
     def __init__(self, c):
         super(Encoder, self).__init__()
         self.c = c
 
     def encode(self, x, adj):
-        print(f"X: {x}")
-        print(f"Input x norm: {torch.linalg.norm(x)}")
+        # print(f"X: {x}")
+        # print(f"Input x norm: {torch.linalg.norm(x)}")
         if self.encode_graph:
             input = (x, adj)
             output, _ = self.layers.forward(input)
@@ -35,7 +34,6 @@ class MLP(Encoder):
     """
     Multi-layer perceptron.
     """
-
     def __init__(self, c, args):
         super(MLP, self).__init__(c)
         assert args.num_layers > 0
@@ -53,7 +51,6 @@ class HNN(Encoder):
     """
     Hyperbolic Neural Networks.
     """
-
     def __init__(self, c, args):
         super(HNN, self).__init__(c)
         self.manifold = getattr(manifolds, args.manifold)()
@@ -80,15 +77,12 @@ class HNN(Encoder):
 
     def encode(self, x, adj):
         x_hyp = self.manifold.proj(self.manifold.expmap0(self.manifold.proj_tan0(x, self.c), c=self.c), c=self.c)
-        # x_hyp = self.hyperbolic_norm(x)
-        # x_hyp = x
         return super(HNN, self).encode(x_hyp, adj)
 
 class GCN(Encoder):
     """
     Graph Convolution Networks.
     """
-
     def __init__(self, c, args):
         super(GCN, self).__init__(c)
         assert args.num_layers > 0
@@ -106,30 +100,9 @@ class HGCN(Encoder):
     """
     Hyperbolic-GCN.
     """
-
-    def __init__(self, c, args):
+    def __init__(self, c, args, manifold):
         super(HGCN, self).__init__(c)
-        if args.manifold not in ["Spherical", "Euclidean", "PoincareBall", "Hyperboloid"]:
-            manifold_array = []
-            word = list(args.manifold)
-            for i in range(0,len(word), 2):
-                if word[i] == "E":
-                    man_name = "Euclidean"
-                elif word[i] == "P":
-                    man_name = "PoincareBall"
-                elif word[i] == "S":
-                    man_name = "Spherical"
-                elif word[i] == "H":
-                    man_name = "Hyperboloid"
-                else:
-                    raise ValueError(f"Invalid manifold name: {args.manifold}.")
-                count = int(word[i+1])
-                manifold_array.append((getattr(manifolds, man_name)(), count))
-            self.manifold_name = "Product"
-            print(manifold_array)
-            self.manifold = getattr(manifolds, self.manifold_name)(manifold_array)
-        else:
-            self.manifold = getattr(manifolds, args.manifold)()
+        self.manifold = manifold[0]
 
         assert args.num_layers > 1
         dims, acts, self.curvatures = hyp_layers.get_dim_act_curv(args)
@@ -156,9 +129,6 @@ class HGCN(Encoder):
         return x_norm
 
     def encode(self, x, adj):
-        # x_tan = self.manifold.proj_tan0(x, self.curvatures[0])
-        # x_hyp = self.manifold.expmap0(x_tan, c=self.curvatures[0])
-        # x_hyp = self.manifold.proj(x_hyp, c=self.curvatures[0])
         x_hyp = x
         return super(HGCN, self).encode(x_hyp, adj)
 
@@ -167,7 +137,6 @@ class GAT(Encoder):
     """
     Graph Attention Networks.
     """
-
     def __init__(self, c, args):
         super(GAT, self).__init__(c)
         assert args.num_layers > 0
@@ -190,7 +159,6 @@ class Shallow(Encoder):
     Shallow Embedding method.
     Learns embeddings or loads pretrained embeddings and uses an MLP for classification.
     """
-
     def __init__(self, c, args):
         super(Shallow, self).__init__(c)
         self.manifold = getattr(manifolds, args.manifold)()

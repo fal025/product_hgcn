@@ -48,12 +48,10 @@ class Product(Manifold):
         if first_iter is False:
             indiv_dim = total_dim // len(self.manifolds)
             total = 0
-            print(indiv_dim)
             for i, man in enumerate(self.manifolds):
                 self.indices.append((i * indiv_dim, (i + 1) * indiv_dim))
 
         else:
-            print(f"n manifolds: {self.n_manifolds}")
             indiv_dim = total_dim // self.n_manifolds
             total = 0
             for j, (man, count) in enumerate(manifolds):
@@ -67,7 +65,6 @@ class Product(Manifold):
 
     def split_input(self, *args):
         split = []
-        print(f"indices: {self.indices}")
         for man in self.indices:
             man_split = []
             for s in man:
@@ -86,8 +83,10 @@ class Product(Manifold):
             man_split = splits[i]
             for s in man_split:
                 res.append(man.sqdist(*s, c))
-        res[0] = res[0].squeeze()
-        return torch.cat(res[:-1], dim=0)
+        print(len(res))
+        for x in res:
+            print(x.size())
+        return torch.cat(res, dim=0)
 
     def egrad2rgrad(self, p, dp, c):
         """Converts Euclidean Gradient to Riemannian Gradients."""

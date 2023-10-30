@@ -47,16 +47,15 @@ class Spherical(Manifold):
 
     def logmap(self, x, y, c):
         v = self.proju(x, y - x, c)
-        print(f"v: {v}")
-        # break
-        print(f"x norm: {torch.linalg.norm(x)}")
-        print(f"y norm: {torch.linalg.norm(y)}")
+        # print(f"v: {v}")
+        # print(f"x norm: {torch.linalg.norm(x)}")
+        # print(f"y norm: {torch.linalg.norm(y)}")
         dist = self.dist(x, y, c)
-        print(f"dist: {dist}")
+        # print(f"dist: {dist}")
         eps = self.eps[x.dtype]
         scale = (dist + eps) / (torch.linalg.norm(v) + eps)
-        print(f"scale: {scale}")
-        print(f"scale * v: {scale * v}")
+        # print(f"scale: {scale}")
+        # print(f"scale * v: {scale * v}")
         return scale * v
 
     def expmap0(self, u, c):
@@ -75,7 +74,6 @@ class Spherical(Manifold):
         return self.expmap(v, x, c)
 
     def mobius_matvec(self, m, x, c):
-        print(f"Manifold x norm: {torch.linalg.norm(x)}")
         u = self.logmap0(x, c)
         mu = u @ m.T
         return self.expmap0(mu, c)

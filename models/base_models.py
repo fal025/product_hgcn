@@ -14,9 +14,8 @@ class BaseModel(nn.Module):
     """
     Base model for graph embedding tasks.
     """
-    def __init__(self, args):
+    def __init__(self, args, manifold, manifold_array):
         super().__init__()
-        self.manifold_name = args.manifold
         if args.c is not None:
             self.c = torch.tensor([args.c])
         else:
@@ -24,36 +23,33 @@ class BaseModel(nn.Module):
         if not args.cuda == -1:
             self.c = self.c.to(args.device)
         
-        if self.manifold_name not in ["Spherical", "Euclidean", "PoincareBall", "Hyperboloid"]:
-            manifold_array = []
-            word = list(self.manifold_name)
-            for i in range(0, len(word), 2):
-                if word[i] == "E":
-                    manifold_name = "Euclidean"
-                elif word[i] == "P":
-                    manifold_name = "PoincareBall"
-                elif word[i] == "S":
-                    manifold_name = "Spherical"
-                elif word[i] == "H":
-                    manifold_name = "Hyperboloid"
-                else:
-                    raise ValueError("Invalid string in the manifold")
-                count = int(word[i + 1])
-
-                manifold_array.append((getattr(manifolds, manifold_name)(), count))
-
-            self.manifold_name = "Product"
-            # self.manifold = manifold_array
-            self.manifold = getattr(manifolds, self.manifold_name)(manifold_array)
-                    
-        else:
-            self.manifold = getattr(manifolds, self.manifold_name)()
+        self.manifold = manifold
+        self.manifold_array = manifold_array
         self.nnodes = args.n_nodes
-        self.encoder = getattr(encoders, args.model)(self.c, args)
+        encs = []
+        self.manifold.calc_indices(self.manifold_array, 105)
+        for i, m in enumerate(self.manifold_array):
+            for split in self.manifold.indices[i]:
+                args.feat_dim = split[1] - split[0]
+                # print(f"feat dim: {args.feat_dim}")
+                enc = getattr(encoders, args.model)(self.c, args, m)
+                encs.append(enc)
+        
+        self.encoders = nn.ModuleList(encs)
+
 
     def encode(self, x, adj):
-        h = self.encoder.encode(x, adj)
-        return h
+        self.manifold.calc_indices(self.manifold_array, 105)
+        i = 0
+        embs = []
+        for split in self.manifold.indices:
+            for s in split:
+                encoder = self.encoders[i]
+                start, end = s
+                h = encoder.encode(x[:, start:end], adj)
+                i += 1
+                embs.append(h)
+        return torch.cat(embs, dim=1)
 
     def compute_metrics(self, embeddings, data, split):
         raise NotImplementedError
@@ -106,19 +102,22 @@ class LPModel(BaseModel):
     """
     Base model for link prediction task.
     """
-    def __init__(self, args):
-        super().__init__(args)
+    def __init__(self, args, manifold, manifold_array):
+        super().__init__(args, manifold, manifold_array)
         self.dc = FermiDiracDecoder(r=args.r, t=args.t)
         self.nb_false_edges = args.nb_false_edges
         self.nb_edges = args.nb_edges
+        self.manifold = manifold
+        self.manifold_name = "Product"
+        self.manifold_array = manifold_array
+        # print(f"manifold arr: {manifold_array}")
 
     def decode(self, h, idx):
         # if self.manifold_name == 'Euclidean' or self.manifold_name == "Product":
         #     h = self.manifold.normalize(h)
+        print(h, h.size())
         emb_in = h[idx[:, 0], :]
         emb_out = h[idx[:, 1], :]
-        print(emb_in)
-        print(emb_out)
         sqdist = self.manifold.sqdist(emb_in, emb_out, self.c)
         probs = self.dc.forward(sqdist)
         return probs
