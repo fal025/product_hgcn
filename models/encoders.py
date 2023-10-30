@@ -3,6 +3,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
+import torch
 import torch.nn.functional as F
 
 import manifolds
@@ -21,6 +22,8 @@ class Encoder(nn.Module):
         self.c = c
 
     def encode(self, x, adj):
+        print(f"X: {x}")
+        print(f"Input x norm: {torch.linalg.norm(x)}")
         if self.encode_graph:
             input = (x, adj)
             output, _ = self.layers.forward(input)

@@ -53,17 +53,27 @@ class Product(Manifold):
                 self.indices.append((i * indiv_dim, (i + 1) * indiv_dim))
 
         else:
+            print(f"n manifolds: {self.n_manifolds}")
             indiv_dim = total_dim // self.n_manifolds
             total = 0
-            for man, count in manifolds:
-                self.indices.append((total, total + count * indiv_dim))
-                total += count * indiv_dim
+            for j, (man, count) in enumerate(manifolds):
+                self.indices.append([])
+                for i in range(count):
+                    if j == 2 and i == count - 1:
+                        self.indices[j].append((total, total_dim))
+                    else:
+                        self.indices[j].append((total, total + indiv_dim))
+                    total += indiv_dim
 
     def split_input(self, *args):
         split = []
-        for arg in args:
-            split_arg = tuple([arg[:, start:end] for start, end in self.indices])
-            split.append(split_arg)
+        print(f"indices: {self.indices}")
+        for man in self.indices:
+            man_split = []
+            for s in man:
+                split_arg = tuple([arg[:, s[0]:s[1]] for arg in args])
+                man_split.append(split_arg)
+            split.append(man_split)
         return split
 
 
@@ -73,125 +83,153 @@ class Product(Manifold):
         splits = self.split_input(p1, p2)
         res = []
         for i, man in enumerate(self.manifolds):
-            split = tuple([x[i] for x in splits])
-            res.append(man.sqdist(*split, c))
-        return torch.cat(res, dim=1)
+            man_split = splits[i]
+            for s in man_split:
+                res.append(man.sqdist(*s, c))
+        res[0] = res[0].squeeze()
+        return torch.cat(res[:-1], dim=0)
 
     def egrad2rgrad(self, p, dp, c):
         """Converts Euclidean Gradient to Riemannian Gradients."""
+        self.calc_indices(self.man_count, p.size(1), first_iter=True)
         splits = self.split_input(p, dp)
-        res = torch.empty(100)
-        for i, (split, man) in enumerate(zip(splits, self.manifolds)):
-            start, end = self.indices[i]
-            res[start:end] = man.egrad2rgrad(*split)
-        return res
+        res = []
+        for i, man in enumerate(self.manifolds):
+            man_split = splits[i]
+            for s in man_split:
+                res.append(man.proj(*s, c))
+        return torch.cat(res, dim=1)
 
     def proj(self, p, c):
         """Projects point p on the manifold."""
-        self.calc_indices(self.man_count, p.size(1), first_iter=False)
+        self.calc_indices(self.man_count, p.size(1), first_iter=True)
         splits = self.split_input(p)
         res = []
         for i, man in enumerate(self.manifolds):
-            split = tuple([x[i] for x in splits])
-            res.append(man.proj(*split, c))
+            man_split = splits[i]
+            for s in man_split:
+                res.append(man.proj(*s, c))
         return torch.cat(res, dim=1)
 
     def proj_tan(self, u, p, c):
         """Projects u on the tangent space of p."""
+        self.calc_indices(self.man_count, u.size(1), first_iter=True)
         splits = self.split_input(u, p)
         res = []
         for i, man in enumerate(self.manifolds):
-            split = tuple([x[i] for x in splits])
-            res.append(man.proj_tan(*split, c))
+            man_split = splits[i]
+            for s in man_split:
+                res.append(man.proj_tan(*s, c))
         return torch.cat(res, dim=1)
 
     def proj_tan0(self, u, c):
         """Projects u on the tangent space of the origin."""
+        self.calc_indices(self.man_count, u.size(1), first_iter=True)
         splits = self.split_input(u)
         res = []
         for i, man in enumerate(self.manifolds):
-            split = tuple([x[i] for x in splits])
-            res.append(man.proj_tan0(*split, c))
+            man_split = splits[i]
+            for s in man_split:
+                res.append(man.proj_tan0(*s, c))
         return torch.cat(res, dim=1)
 
     def expmap(self, u, p, c):
         """Exponential map of u at point p."""
+        self.calc_indices(self.man_count, u.size(1), first_iter=True)
         splits = self.split_input(u, p)
-        res = torch.empty(100)
-        for i, (split, man) in enumerate(zip(splits, self.manifolds)):
-            start, end = self.indices[i]
-            res[start:end] = man.proj_tan0(*split, c)
-        return res
+        res = []
+        for i, man in enumerate(self.manifolds):
+            man_split = splits[i]
+            for s in man_split:
+                res.append(man.expmap(*s, c))
+        return torch.cat(res, dim=1)
 
     def logmap(self, p1, p2, c):
+        self.calc_indices(self.man_count, p1.size(1), first_iter=True)
         splits = self.split_input(p1, p2)
-        res = torch.empty(100)
-        for i, (split, man) in enumerate(zip(splits, self.manifolds)):
-            start, end = self.indices[i]
-            res[start:end] = man.logmap(*split, c)
-        return res
+        res = []
+        for i, man in enumerate(self.manifolds):
+            man_split = splits[i]
+            for s in man_split:
+                res.append(man.logmap(*s, c))
+        return torch.cat(res, dim=1)
 
     def expmap0(self, u, c):
         """Exponential map of u at point p."""
-        self.calc_indices(self.man_count, u.size(1), first_iter=False)
+        self.calc_indices(self.man_count, u.size(1), first_iter=True)
         splits = self.split_input(u)
         res = []
         for i, man in enumerate(self.manifolds):
-            split = tuple([x[i] for x in splits])
-            res.append(man.expmap0(*split, c))
+            man_split = splits[i]
+            for s in man_split:
+                res.append(man.expmap0(*s, c))
         return torch.cat(res, dim=1)
 
     def logmap0(self, p, c):
-        self.calc_indices(self.man_count, p.size(1), first_iter=False)
+        self.calc_indices(self.man_count, p.size(1), first_iter=True)
         splits = self.split_input(p)
         res = []
         for i, man in enumerate(self.manifolds):
-            split = tuple([x[i] for x in splits])
-            res.append(man.logmap0(*split, c))
+            man_split = splits[i]
+            for s in man_split:
+                res.append(man.logmap0(*s, c))
         return torch.cat(res, dim=1)
 
     def mobius_add(self, x, y, c, dim=-1):
+        self.calc_indices(self.man_count, x.size(1))
         splits = self.split_input(x, y)
-        res = torch.empty(100)
-        for i, (split, man) in enumerate(zip(splits, self.manifolds)):
-            start, end = self.indices[i]
-            res[start:end] = man.mobius_add(*split, c)
-        return res
+        res = []
+        for i, man in enumerate(self.manifolds):
+            man_split = splits[i]
+            for s in man_split:
+                res.append(man.mobius_add(*s, c))
+        return torch.cat(res, dim=1)
 
     def mobius_matvec(self, m, x, c):
         self.calc_indices(self.man_count, m.size(1))
         splits = self.split_input(m, x)
         res = []
         for i, man in enumerate(self.manifolds):
-            split = tuple([x[i] for x in splits])
-            res.append(man.mobius_matvec(*split, c))
+            man_split = splits[i]
+            for s in man_split:
+                print(f"len: {len(s)}")
+                print(f"hee: {s}")
+                for x in s:
+                    print(x.size())
+                res.append(man.mobius_matvec(*s, c))
         return torch.cat(res, dim=1)
 
     def init_weights(self, w, c, irange=1e-5):
         """Initializes random weigths on the manifold."""
+        self.calc_indices(self.man_count, w.size(1))
         splits = self.split_input(w)
-        res = torch.empty(100)
-        for i, (split, man) in enumerate(zip(splits, self.manifolds)):
-            start, end = self.indices[i]
-            res[start:end] = man.init_weights(*split, c)
-        return res
+        res = []
+        for i, man in enumerate(self.manifolds):
+            man_split = splits[i]
+            for s in man_split:
+                res.append(man.init_weights(*s, c))
+        return torch.cat(res, dim=1)
 
     def inner(self, p, c, u, v=None, keepdim=True):
         """Inner product for tangent vectors at point x."""
+        self.calc_indices(self.man_count, p.size(1))
         splits = self.split_input(p, u)
-        res = torch.empty(100)
-        for i, (split, man) in enumerate(zip(splits, self.manifolds)):
-            start, end = self.indices[i]
-            res[start:end] = man.inner(*split, c)
-        return res
+        res = []
+        for i, man in enumerate(self.manifolds):
+            man_split = splits[i]
+            for s in man_split:
+                res.append(man.inner(*s, c))
+        return torch.cat(res, dim=1)
 
     def ptransp(self, x, y, u, c):
+        self.calc_indices(self.man_count, x.size(1))
         splits = self.split_input(x, y, u)
-        res = torch.empty(100)
-        for i, (split, man) in enumerate(zip(splits, self.manifolds)):
-            start, end = self.indices[i]
-            res[start:end] = man.ptransp(*split, c)
-        return res
+        res = []
+        for i, man in enumerate(self.manifolds):
+            man_split = splits[i]
+            for s in man_split:
+                res.append(man.ptransp(*s, c))
+        return torch.cat(res, dim=1)
     
     def take_submanifold_value(self, x, i, reshape=True, is_matvec=False):
         x = x.clone()

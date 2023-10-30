@@ -70,7 +70,7 @@ class LinearDecoder(Decoder):
                 elif word[i] == "H":
                     man_name = "Hyperboloid"
                 else:
-                    raise ValueError("Invalide string in the manifold")
+                    raise ValueError("Invalid string in the manifold")
                 count = int(word[i+1])
                 #for j in range(count):
                 manifold_array.append((getattr(manifolds, man_name)(),count))
