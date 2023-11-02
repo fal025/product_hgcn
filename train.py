@@ -7,6 +7,7 @@ import time
 import pickle
 import logging
 import datetime
+import manifolds
 
 import torch
 import optimizers
@@ -69,7 +70,29 @@ def train(args):
         args.lr_reduce_freq = args.epochs
 
     # Model and optimizer
-    model = Model(args)
+    manifold_array = []
+    if args.manifold not in ["Spherical", "Euclidean", "PoincareBall", "Hyperboloid"]:
+        manifold_array = []
+        word = list(args.manifold)
+        for i in range(0,len(word), 2):
+            if word[i] == "E":
+                man_name = "Euclidean"
+            elif word[i] == "P":
+                man_name = "PoincareBall"
+            elif word[i] == "S":
+                man_name = "Spherical"
+            elif word[i] == "H":
+                man_name = "Hyperboloid"
+            else:
+                raise ValueError(f"Invalid manifold name: {args.manifold}.")
+            count = int(word[i+1])
+            manifold_array.append((getattr(manifolds, man_name)(), count))
+        manifold_name = "Product"
+        print(manifold_array)
+        manifold = getattr(manifolds, manifold_name)(manifold_array)
+    else:
+        manifold = getattr(manifolds, args.manifold)()
+    model = Model(args, manifold, manifold_array)
     logging.info(str(model))
     optimizer = getattr(optimizers, args.optimizer)(params=model.parameters(), lr=args.lr,
                                                     weight_decay=args.weight_decay)

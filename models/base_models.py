@@ -23,33 +23,49 @@ class BaseModel(nn.Module):
         if not args.cuda == -1:
             self.c = self.c.to(args.device)
         
+        self.args = args
         self.manifold = manifold
+        self.manifold_name = args.manifold
         self.manifold_array = manifold_array
         self.nnodes = args.n_nodes
         encs = []
-        self.manifold.calc_indices(self.manifold_array, 105)
-        for i, m in enumerate(self.manifold_array):
-            for split in self.manifold.indices[i]:
-                args.feat_dim = split[1] - split[0]
-                # print(f"feat dim: {args.feat_dim}")
-                enc = getattr(encoders, args.model)(self.c, args, m)
-                encs.append(enc)
-        
-        self.encoders = nn.ModuleList(encs)
+        if len(self.manifold_array) > 0:
+            self.manifold.calc_indices(self.manifold_array, args.total_dim)
+            for i, m in enumerate(self.manifold_array):
+                for split in self.manifold.indices[i]:
+                    args.feat_dim = split[1] - split[0]
+                    # print(f"feat dim: {args.feat_dim}")
+                    enc = getattr(encoders, args.model)(self.c, args, m)
+                    encs.append(enc)
+            
+            self.encoders = nn.ModuleList(encs)
 
+        else:
+            self.manifold = getattr(manifolds, self.manifold_name)()
+            if self.manifold.name == 'Hyperboloid':
+                args.feat_dim = args.feat_dim + 1
+            self.nnodes = args.n_nodes
+            self.encoder = getattr(encoders, args.model)(self.c, args)
 
     def encode(self, x, adj):
-        self.manifold.calc_indices(self.manifold_array, 105)
-        i = 0
-        embs = []
-        for split in self.manifold.indices:
-            for s in split:
-                encoder = self.encoders[i]
-                start, end = s
-                h = encoder.encode(x[:, start:end], adj)
-                i += 1
-                embs.append(h)
-        return torch.cat(embs, dim=1)
+        if len(self.manifold_array) > 0:
+            self.manifold.calc_indices(self.manifold_array, self.args.total_dim)
+            i = 0
+            embs = []
+            for split in self.manifold.indices:
+                for s in split:
+                    encoder = self.encoders[i]
+                    start, end = s
+                    h = encoder.encode(x[:, start:end], adj)
+                    i += 1
+                    embs.append(h)
+            return torch.cat(embs, dim=1)
+        if self.manifold.name == 'Hyperboloid':
+            o = torch.zeros_like(x)
+            x = torch.cat([o[:, 0:1], x], dim=1)
+        h = self.encoder.encode(x, adj)
+        return h
+
 
     def compute_metrics(self, embeddings, data, split):
         raise NotImplementedError
@@ -115,7 +131,6 @@ class LPModel(BaseModel):
     def decode(self, h, idx):
         # if self.manifold_name == 'Euclidean' or self.manifold_name == "Product":
         #     h = self.manifold.normalize(h)
-        print(h, h.size())
         emb_in = h[idx[:, 0], :]
         emb_out = h[idx[:, 1], :]
         sqdist = self.manifold.sqdist(emb_in, emb_out, self.c)
