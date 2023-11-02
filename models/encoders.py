@@ -1,5 +1,4 @@
 """Graph encoders."""
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -21,8 +20,6 @@ class Encoder(nn.Module):
         self.c = c
 
     def encode(self, x, adj):
-        # print(f"X: {x}")
-        # print(f"Input x norm: {torch.linalg.norm(x)}")
         if self.encode_graph:
             input = (x, adj)
             output, _ = self.layers.forward(input)
@@ -113,9 +110,9 @@ class HGCN(Encoder):
             in_dim, out_dim = dims[i], dims[i + 1]
             act = acts[i]
             hgc_layers.append(
-                    hyp_layers.HyperbolicGraphConvolution(
-                            self.manifold, in_dim, out_dim, c_in, c_out, args.dropout, act, args.bias, args.use_att, False
-                    )
+                hyp_layers.HyperbolicGraphConvolution(
+                    self.manifold, in_dim, out_dim, c_in, c_out, args.dropout, act, args.bias, args.use_att, False
+                )
             )
         self.layers = nn.Sequential(*hgc_layers)
         self.encode_graph = True
@@ -129,8 +126,15 @@ class HGCN(Encoder):
         return x_norm
 
     def encode(self, x, adj):
-        x_hyp = x
-        return super(HGCN, self).encode(x_hyp, adj)
+        # if self.manifold.name == "Hyperboloid":
+        #     norm = self.manifold.minkowski_norm
+        #     # print(self.manifold.name, norm(x))
+        # elif self.manifold.name == "Euclidean" or self.manifold.name == "Spherical":
+        #     norm = torch.linalg.norm
+            # print(self.manifold.name, norm(x, dim=1))
+            # if self.manifold.name == "Spherical":
+            #     sys.exit()
+        return super().encode(x.float(), adj)
 
 
 class GAT(Encoder):

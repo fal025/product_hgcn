@@ -25,7 +25,10 @@ class BaseModel(nn.Module):
         
         self.args = args
         self.manifold = manifold
-        self.manifold_name = args.manifold
+        if len(manifold_array) > 0:
+            self.manifold_name = "Product"
+        else:
+            self.manifold_name = args.manifold
         self.manifold_array = manifold_array
         self.nnodes = args.n_nodes
         encs = []
@@ -34,7 +37,6 @@ class BaseModel(nn.Module):
             for i, m in enumerate(self.manifold_array):
                 for split in self.manifold.indices[i]:
                     args.feat_dim = split[1] - split[0]
-                    # print(f"feat dim: {args.feat_dim}")
                     enc = getattr(encoders, args.model)(self.c, args, m)
                     encs.append(enc)
             
@@ -60,6 +62,7 @@ class BaseModel(nn.Module):
                     i += 1
                     embs.append(h)
             return torch.cat(embs, dim=1)
+
         if self.manifold.name == 'Hyperboloid':
             o = torch.zeros_like(x)
             x = torch.cat([o[:, 0:1], x], dim=1)

@@ -23,21 +23,15 @@ class Spherical(Manifold):
         self.eps = {torch.float32: 1e-7, torch.float64: 1e-15}
 
     def inner_product(self, u, v):
-        # return torch.tensordot(u, v, dims=2)
-        # print(u.size(), v.size())
         if u.size(1) != v.size(1):
             v = v.T
-        return torch.diag(torch.inner(u.T, v.T))
+        return torch.diag(torch.inner(u, v))
 
     def dist(self, x, y, c):
-        # print(f"x: {x.size()}")
-        # print(f"y: {y.size()}")
-        # print(f"inner: {self.inner_product(x,y)}")
         return torch.arccos(self.inner_product(x, y).clamp(0.0, torch.pi))
 
     def sqdist(self, x, y, c):
         dist = self.dist(x, y, c) ** 2
-        # print(f"dist: {dist}")
         return dist
 
     def egrad2rgrad(self, p, dp, c):
@@ -45,38 +39,23 @@ class Spherical(Manifold):
 
     def proj(self, x, c):
         projected = x / torch.norm(x).clamp_min(self.eps[x.dtype])
-        # print(f"proj: {projected}")
         return projected
 
     def proju(self, x, u, c):
-        # print(f"x size: {x.size()}")
-        return u - self.inner_product(x, u) * x
+        return u - self.inner_product(x, u).unsqueeze(dim=1) * x
 
     def expmap(self, v, p, c):
-        p = self.proj(p, 1.0)
-        # print(f"p norm: {torch.linalg.norm(p)}")
         v = torch.nan_to_num(v)
         v_norm = abs(c) * v.norm(dim=-1, keepdim=True).clamp(self.eps[v.dtype], 1000)
-        # print(f"cos(v_norm): {torch.cos(v_norm)}")
         exp = p * torch.cos(v_norm) + v * c * torch.sinc(v_norm / torch.pi)
-        # print(f"exp: {exp}")
         return exp
 
     def logmap(self, x, y, c):
-        x = self.proj(x, 1.0)
-        y = self.proj(y, 1.0)
-        # print(f"y: {y}")
         v = self.proju(x, y - x, c)
-        # print(f"v: {v}")
-        # print(f"x norm: {torch.linalg.norm(x)}")
-        # print(f"y norm: {torch.linalg.norm(y)}")
         dist = self.dist(x, y, c)
-        # print(f"dist: {dist}")
         eps = self.eps[x.dtype]
-        scale = (dist + eps) / (torch.linalg.norm(v) + eps)
-        # print(f"scale: {scale}")
-        # print(f"scale * v: {scale * v}")
-        return scale * v
+        scale = (dist + eps) / (torch.linalg.norm(v, dim=1) + eps)
+        return scale.unsqueeze(dim=1) * v
 
     def expmap0(self, u, c):
         orig = torch.zeros(u.size())
@@ -114,19 +93,16 @@ class Spherical(Manifold):
         m_norm = self.inner_product(m, m)
         factor = 2 * self.inner_product(u, y) / m_norm
         transported = u - m * factor
-        # print(f"transported: {transported}")
         return transported
 
     def proj_tan(self, u, x, c):
         x = x.clone()
         x[:, -1] = torch.diag(x[:, :-1] @ u[:, :-1].T) / u[:, -1]
-        # print(f"tan: {x}")
         return x
 
     def proj_tan0(self, x, c):
         orig = torch.zeros(x.size(), dtype=x.dtype)
         orig[-1] = 1
         return self.proj_tan(orig, x, c)
-
 
     # x2[2] = -torch.inner(x2[:2], s[:2]) / s[2]
