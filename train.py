@@ -6,6 +6,7 @@ import json
 import time
 import pickle
 import logging
+import warnings
 import datetime
 import manifolds
 
@@ -17,6 +18,8 @@ from config import parser
 from models.base_models import NCModel, LPModel
 from utils.data_utils import load_data
 from utils.train_utils import get_dir_name, format_metrics
+
+warnings.filterwarnings("ignore")
 
 
 def train(args):
@@ -88,10 +91,10 @@ def train(args):
             count = int(word[i+1])
             manifold_array.append((getattr(manifolds, man_name)(), count))
         manifold_name = "Product"
-        print(manifold_array)
         manifold = getattr(manifolds, manifold_name)(manifold_array)
     else:
         manifold = getattr(manifolds, args.manifold)()
+        print(manifold)
     model = Model(args, manifold, manifold_array)
     logging.info(str(model))
     optimizer = getattr(optimizers, args.optimizer)(params=model.parameters(), lr=args.lr,

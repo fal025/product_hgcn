@@ -99,7 +99,7 @@ class HGCN(Encoder):
     """
     def __init__(self, c, args, manifold):
         super(HGCN, self).__init__(c)
-        self.manifold = manifold[0]
+        self.manifold = manifold
 
         assert args.num_layers > 1
         dims, acts, self.curvatures = hyp_layers.get_dim_act_curv(args)
@@ -126,14 +126,6 @@ class HGCN(Encoder):
         return x_norm
 
     def encode(self, x, adj):
-        # if self.manifold.name == "Hyperboloid":
-        #     norm = self.manifold.minkowski_norm
-        #     # print(self.manifold.name, norm(x))
-        # elif self.manifold.name == "Euclidean" or self.manifold.name == "Spherical":
-        #     norm = torch.linalg.norm
-            # print(self.manifold.name, norm(x, dim=1))
-            # if self.manifold.name == "Spherical":
-            #     sys.exit()
         return super().encode(x.float(), adj)
 
 

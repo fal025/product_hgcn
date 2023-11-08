@@ -37,7 +37,7 @@ class BaseModel(nn.Module):
             for i, m in enumerate(self.manifold_array):
                 for split in self.manifold.indices[i]:
                     args.feat_dim = split[1] - split[0]
-                    enc = getattr(encoders, args.model)(self.c, args, m)
+                    enc = getattr(encoders, args.model)(self.c, args, m[0])
                     encs.append(enc)
             
             self.encoders = nn.ModuleList(encs)
@@ -47,7 +47,7 @@ class BaseModel(nn.Module):
             if self.manifold.name == 'Hyperboloid':
                 args.feat_dim = args.feat_dim + 1
             self.nnodes = args.n_nodes
-            self.encoder = getattr(encoders, args.model)(self.c, args)
+            self.encoder = getattr(encoders, args.model)(self.c, args, self.manifold)
 
     def encode(self, x, adj):
         if len(self.manifold_array) > 0:
