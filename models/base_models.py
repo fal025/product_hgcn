@@ -129,7 +129,6 @@ class LPModel(BaseModel):
         self.manifold = manifold
         self.manifold_name = "Product"
         self.manifold_array = manifold_array
-        # print(f"manifold arr: {manifold_array}")
 
     def decode(self, h, idx):
         # if self.manifold_name == 'Euclidean' or self.manifold_name == "Product":
