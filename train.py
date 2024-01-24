@@ -96,7 +96,7 @@ def train(args):
         manifold = getattr(manifolds, args.manifold)()
         print(manifold)
     model = Model(args, manifold, manifold_array)
-    logging.info(str(model))
+    # logging.info(str(model))
     optimizer = getattr(optimizers, args.optimizer)(params=model.parameters(), lr=args.lr,
                                                     weight_decay=args.weight_decay)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(
