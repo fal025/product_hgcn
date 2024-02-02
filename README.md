@@ -23,6 +23,12 @@ python3 train.py --task lp --dataset <dataset_name> --model HGCN --lr 0.01 --dim
 
 To specify a choice of product space use a string of the form <H{x}E{y}S{z}> x, y, and z indicate the number of copies of Hyperbolic, Euclidean, and Spherical space, respectively. An example input would be `H1E2S2`.
 
+## Citation
+The modified Mixed-Curvature Product Space GCN is described in the following preprint:  
+[Product Manifold Representations for Learning on Biological Pathways](https://arxiv.org/abs/2401.15478)  
+Daniel McNeela, Frederic Sala<sup>+</sup>, Anthony Gitter<sup>+</sup>.  
+arXiv:2401.15478. 2024
+
 ## License
 The code is available under the [Apache License 2.0](LICENSE).
 Most of the source code is derived from the unlicensed [hgcn](https://github.com/HazyResearch/hgcn) and [product_hgcn](https://github.com/fal025/product_hgcn) repositories.
