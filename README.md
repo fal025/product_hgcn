@@ -23,3 +23,16 @@ python3 train.py --task lp --dataset <dataset_name> --model HGCN --lr 0.01 --dim
 
 To specify a choice of product space use a string of the form <H{x}E{y}S{z}> x, y, and z indicate the number of copies of Hyperbolic, Euclidean, and Spherical space, respectively. An example input would be `H1E2S2`.
 
+## License
+The code is available under the [Apache License 2.0](LICENSE).
+Most of the source code is derived from the unlicensed [hgcn](https://github.com/HazyResearch/hgcn) and [product_hgcn](https://github.com/fal025/product_hgcn) repositories.
+The named contributors of those repositories have been added to the license copyright.
+
+The hgcn repository notes additional code was forked from the following repositories
+
+ * [pygcn](https://github.com/tkipf/pygcn)
+ * [gae](https://github.com/tkipf/gae)
+ * [hyperbolic-image-embeddings](https://github.com/KhrulkovV/hyperbolic-image-embeddings)
+ * [pyGAT](https://github.com/Diego999/pyGAT)
+ * [poincare-embeddings](https://github.com/facebookresearch/poincare-embeddings)
+ * [geoopt](https://github.com/geoopt/geoopt)
