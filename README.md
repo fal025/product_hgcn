@@ -29,6 +29,8 @@ The modified Mixed-Curvature Product Space GCN is described in the following pre
 Daniel McNeela, Frederic Sala<sup>+</sup>, Anthony Gitter<sup>+</sup>.  
 arXiv:2401.15478. 2024
 
+See also the [hgcn repository references](https://github.com/HazyResearch/hgcn?tab=readme-ov-file#references).
+
 ## License
 The code is available under the [Apache License 2.0](LICENSE).
 Most of the source code is derived from the unlicensed [hgcn](https://github.com/HazyResearch/hgcn) and [product_hgcn](https://github.com/fal025/product_hgcn) repositories.
