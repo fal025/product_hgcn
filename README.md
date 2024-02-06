@@ -33,7 +33,7 @@ See also the [hgcn repository references](https://github.com/HazyResearch/hgcn?t
 
 ## License
 The code is available under the [Apache License 2.0](LICENSE).
-Most of the source code is derived from the unlicensed [hgcn](https://github.com/HazyResearch/hgcn) and [product_hgcn](https://github.com/fal025/product_hgcn) repositories.
+Some of the source code is derived from the unlicensed [hgcn](https://github.com/HazyResearch/hgcn) and [product_hgcn](https://github.com/fal025/product_hgcn) repositories.
 The named contributors of those repositories have been added to the license copyright.
 
 The hgcn repository notes additional code was forked from the following repositories
