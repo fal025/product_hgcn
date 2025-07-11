@@ -1,5 +1,6 @@
 Mixed-Curvature Product Space GCN
 ==================================================
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15708502.svg)](https://doi.org/10.5281/zenodo.15708502)
 
 Adapted from https://github.com/HazyResearch/hgcn 
 and further forked from https://github.com/fal025/product_hgcn.
